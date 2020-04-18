@@ -5,5 +5,6 @@
     "Version": "1.0",
     "AssemblyName": "Straitjacket.Utility.VersionChecker.dll",
     "Enable": true,
-    "Game": "Both"
+    "Game": "Both",
+    "EntryMethod": "Straitjacket.Utility.HarmonyPatcher.ApplyPatches"
 }
