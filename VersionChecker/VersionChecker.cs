@@ -10,6 +10,9 @@ using UnityEngine.SceneManagement;
 
 namespace Straitjacket.Utility
 {
+    /// <summary>
+    /// An API for checking the client is running the latest version of a mod, informing the user if it is not.
+    /// </summary>
     public class VersionChecker : MonoBehaviour
     {
         private struct VersionRecord
@@ -25,6 +28,14 @@ namespace Straitjacket.Utility
 
         private static Dictionary<Assembly, VersionRecord> CheckedVersions = new Dictionary<Assembly, VersionRecord>();
 
+        /// <summary>
+        /// Entry point for the VersionChecker API when the latest version number is stored in plain text at a given URL.
+        /// </summary>
+        /// <param name="URL">The URL at which the plain text file containing the latest version number can be found.</param>
+        /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
+        /// Optional. By default, will be retrieved from the mod's assembly.</param>
+        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from
+        /// the mod's assembly.</param>
         public static void Check(string URL, Version currentVersion = null, string displayName = null)
         {
             var assembly = Assembly.GetCallingAssembly();
@@ -75,6 +86,17 @@ namespace Straitjacket.Utility
 
             Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
         }
+        /// <summary>
+        /// Entry point for the VersionChecker API when the latest version number is stored in a JSON file at a given URL.
+        /// </summary>
+        /// <typeparam name="T">The type of the class which will be used for deserializing the JSON file.</typeparam>
+        /// <param name="URL">The URL at which the JSON file containing the latest version number can be found.</param>
+        /// <param name="versionProperty">A <see cref="PropertyInfo"/> describing the property om <typeparamref name="T"/>
+        /// which holds the version number.</param>
+        /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
+        /// Optional. By default, will be retrieved from the mod's assembly.</param>
+        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from
+        /// the mod's assembly.</param>
         public static void Check<T>(string URL, PropertyInfo versionProperty, Version currentVersion = null, string displayName = null)
             where T : class
         {
@@ -126,6 +148,16 @@ namespace Straitjacket.Utility
 
             Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
         }
+        /// <summary>
+        /// Entry point for the VersionChecker API when the latest version number is stored in a JSON file at a given URL.
+        /// </summary>
+        /// <typeparam name="T">The type of the class which will be used for deserializing the JSON file.</typeparam>
+        /// <param name="URL">The URL at which the JSON file containing the latest version number can be found.</param>
+        /// <param name="versionProperty">The name of the property in <typeparamref name="T"/> which holds the version number.</param>
+        /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
+        /// Optional. By default, will be retrieved from the mod's assembly.</param>
+        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from
+        /// the mod's assembly.</param>
         public static void Check<T>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
             where T : class
         {
