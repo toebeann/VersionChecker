@@ -21,11 +21,11 @@ namespace Straitjacket.Utility
         }
 
         private static VersionChecker main = null;
-        public static VersionChecker Main => main = main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
+        internal static VersionChecker Main => main = main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
 
         private static Dictionary<Assembly, VersionRecord> CheckedVersions = new Dictionary<Assembly, VersionRecord>();
 
-        public void Check(string URL, Version currentVersion = null, string displayName = null)
+        public static void Check(string URL, Version currentVersion = null, string displayName = null)
         {
             var assembly = Assembly.GetCallingAssembly();
             if (CheckedVersions.ContainsKey(assembly))
@@ -36,21 +36,32 @@ namespace Straitjacket.Utility
             currentVersion = currentVersion ?? assembly.GetName().Version;
             displayName = displayName ?? assembly.GetName().Name;
 
+            string prefix = null;
+            if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
+            {
+                prefix = "[VersionChecker]";
+            } else
+            {
+                prefix = $"[VersionChecker] [{displayName}]";
+            }
+
             if (currentVersion == null)
             {
-                Console.WriteLine($"[VersionChecker] [{displayName}] There was an error retrieving the current version.");
+
+                Console.WriteLine($"{prefix} There was an error retrieving the current version.");
+                return;
             }
 
             if (!CheckConnection(URL))
             {
-                Console.WriteLine($"[VersionChecker] [{displayName}] Unable to check for updates: Connection unavailable.");
+                Console.WriteLine($"{prefix} Unable to check for updates: Connection unavailable.");
                 return;
             }
 
             var latestVersion = GetLatestVersion(URL);
             if (latestVersion == null)
             {
-                Console.WriteLine($"[VersionChecker] [{displayName}] There was an error retrieving the latest version.");
+                Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
                 return;
             }
 
@@ -62,9 +73,9 @@ namespace Straitjacket.Utility
                 Colour = GetColour()
             };
 
-            Console.WriteLine($"[VersionChecker] [{displayName}] {VersionMessage(versionRecord)}");
+            Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
         }
-        public void Check<T>(string URL, PropertyInfo versionProperty, Version currentVersion = null, string displayName = null)
+        public static void Check<T>(string URL, PropertyInfo versionProperty, Version currentVersion = null, string displayName = null)
             where T : class
         {
             var assembly = Assembly.GetCallingAssembly();
@@ -76,21 +87,32 @@ namespace Straitjacket.Utility
             currentVersion = currentVersion ?? assembly.GetName().Version;
             displayName = displayName ?? assembly.GetName().Name;
 
+            string prefix = null;
+            if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
+            {
+                prefix = "[VersionChecker]";
+            }
+            else
+            {
+                prefix = $"[VersionChecker] [{displayName}]";
+            }
+
             if (currentVersion == null)
             {
-                Console.WriteLine($"[VersionChecker] [{displayName}] There was an error retrieving the current version.");
+                Console.WriteLine($"{prefix} There was an error retrieving the current version.");
+                return;
             }
 
             if (!CheckConnection(URL))
             {
-                Console.WriteLine($"[VersionChecker] [{displayName}] Unable to check for updates: Connection unavailable.");
+                Console.WriteLine($"{prefix} Unable to check for updates: Connection unavailable.");
                 return;
             }
 
             var latestVersion = GetLatestVersion<T>(URL, versionProperty);
             if (latestVersion == null)
             {
-                Console.WriteLine($"[VersionChecker] [{displayName}] There was an error retrieving the latest version.");
+                Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
                 return;
             }
 
@@ -102,9 +124,9 @@ namespace Straitjacket.Utility
                 Colour = GetColour()
             };
 
-            Console.WriteLine($"[VersionChecker] [{displayName}] {VersionMessage(versionRecord)}");
+            Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
         }
-        public void Check<T>(string URL, string versionProperty, Version currentVersion = null, string displayName = null)
+        public static void Check<T>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
             where T : class
         {
             var assembly = Assembly.GetCallingAssembly();
@@ -280,13 +302,13 @@ namespace Straitjacket.Utility
             }
         }
 
-        private bool IsOutdated(VersionRecord versionRecord) => versionRecord.CurrentVersion < versionRecord.LatestVersion &&
+        private static bool IsOutdated(VersionRecord versionRecord) => versionRecord.CurrentVersion < versionRecord.LatestVersion &&
             versionRecord.CurrentVersion.ToStringParsed() != versionRecord.LatestVersion.ToStringParsed();
 
-        private bool IsAhead(VersionRecord versionRecord) => versionRecord.CurrentVersion > versionRecord.LatestVersion &&
+        private static bool IsAhead(VersionRecord versionRecord) => versionRecord.CurrentVersion > versionRecord.LatestVersion &&
             versionRecord.CurrentVersion.ToStringParsed() != versionRecord.LatestVersion.ToStringParsed();
 
-        private string VersionMessage(VersionRecord versionRecord, bool splitLines = false)
+        private static string VersionMessage(VersionRecord versionRecord, bool splitLines = false)
         {
             if (IsOutdated(versionRecord))
             {

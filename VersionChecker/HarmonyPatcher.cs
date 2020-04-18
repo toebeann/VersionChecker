@@ -6,6 +6,10 @@ namespace Straitjacket.Utility
     public class HarmonyPatcher
     {
         [QModPatch]
-        public static void ApplyPatches() { }
+        public static void ApplyPatches() {
+            VersionChecker.Check<ModJson>(
+                "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod.json"
+            );
+        }
     }
 }
