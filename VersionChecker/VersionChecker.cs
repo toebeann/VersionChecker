@@ -24,7 +24,7 @@ namespace Straitjacket.Utility
         }
 
         private static VersionChecker main = null;
-        internal static VersionChecker Main => main = main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
+        internal static VersionChecker Singleton() => main = main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
 
         private static Dictionary<Assembly, VersionRecord> CheckedVersions = new Dictionary<Assembly, VersionRecord>();
 
@@ -38,6 +38,8 @@ namespace Straitjacket.Utility
         /// the mod's assembly.</param>
         public static void Check(string URL, Version currentVersion = null, string displayName = null)
         {
+            Singleton();
+
             var assembly = Assembly.GetCallingAssembly();
             if (CheckedVersions.ContainsKey(assembly))
             {
@@ -91,15 +93,16 @@ namespace Straitjacket.Utility
         /// </summary>
         /// <typeparam name="T">The type of the class which will be used for deserializing the JSON file.</typeparam>
         /// <param name="URL">The URL at which the JSON file containing the latest version number can be found.</param>
-        /// <param name="versionProperty">A <see cref="PropertyInfo"/> describing the property om <typeparamref name="T"/>
-        /// which holds the version number.</param>
+        /// <param name="versionProperty">The name of the property in <typeparamref name="T"/> which holds the version number.</param>
         /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
         /// Optional. By default, will be retrieved from the mod's assembly.</param>
         /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from
         /// the mod's assembly.</param>
-        public static void Check<T>(string URL, PropertyInfo versionProperty, Version currentVersion = null, string displayName = null)
+        public static void Check<T>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
             where T : class
         {
+            Singleton();
+
             var assembly = Assembly.GetCallingAssembly();
             if (CheckedVersions.ContainsKey(assembly))
             {
@@ -131,7 +134,7 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            var latestVersion = GetLatestVersion<T>(URL, versionProperty);
+            var latestVersion = GetLatestVersion<T>(URL, typeof(T).GetProperty(versionProperty));
             if (latestVersion == null)
             {
                 Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
@@ -147,24 +150,6 @@ namespace Straitjacket.Utility
             };
 
             Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
-        }
-        /// <summary>
-        /// Entry point for the VersionChecker API when the latest version number is stored in a JSON file at a given URL.
-        /// </summary>
-        /// <typeparam name="T">The type of the class which will be used for deserializing the JSON file.</typeparam>
-        /// <param name="URL">The URL at which the JSON file containing the latest version number can be found.</param>
-        /// <param name="versionProperty">The name of the property in <typeparamref name="T"/> which holds the version number.</param>
-        /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod's assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from
-        /// the mod's assembly.</param>
-        public static void Check<T>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
-            where T : class
-        {
-            var assembly = Assembly.GetCallingAssembly();
-            currentVersion = currentVersion ?? assembly.GetName().Version;
-            displayName = displayName ?? assembly.GetName().Name;
-            Check<T>(URL, typeof(T).GetProperty(versionProperty), currentVersion, displayName);
         }
 
         private static Version GetLatestVersion(string URL)
@@ -250,7 +235,7 @@ namespace Straitjacket.Utility
         {
             if (main == this)
             {
-                Main.StopAllCoroutines();
+                Singleton().StopAllCoroutines();
                 main = null;
             }
         }
@@ -258,17 +243,17 @@ namespace Straitjacket.Utility
         private bool IsRunning = false;
         private static void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (Main != null && !Main.IsRunning)
+            if (Singleton() != null && !Singleton().IsRunning)
             {
                 if (scene.name == "Main")
                 {
-                    Main.IsRunning = true;
-                    Main.StartCoroutine(Main.PrintOutdatedVersions());
+                    Singleton().IsRunning = true;
+                    Singleton().StartCoroutine(Singleton().PrintOutdatedVersions());
                 }
                 else if (mode == LoadSceneMode.Single)
                 {
-                    Main.IsRunning = false;
-                    Main.StopAllCoroutines();
+                    Singleton().IsRunning = false;
+                    Singleton().StopAllCoroutines();
                 }
             }
         }
