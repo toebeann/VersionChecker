@@ -192,16 +192,7 @@ namespace Straitjacket.Utility
         private const string GOOGLE_204_URL = "http://google.com/generate_204";
         private static bool CheckConnection(string URL = GOOGLE_204_URL)
         {
-            if (URL != GOOGLE_204_URL)
-            {
-                var preliminary = CheckConnection(GOOGLE_204_URL);
-                if (preliminary)
-                {
-                    return preliminary;
-                }
-                return CheckConnection(URL);
-            }
-            else
+            Func<bool> runCheck = () =>
             {
                 try
                 {
@@ -215,6 +206,20 @@ namespace Straitjacket.Utility
                 {
                     return false;
                 }
+            };
+
+            if (URL != GOOGLE_204_URL)
+            {
+                var preliminary = CheckConnection(GOOGLE_204_URL);
+                if (preliminary)
+                {
+                    return preliminary;
+                }
+                return runCheck();
+            }
+            else
+            {
+                return runCheck();
             }
         }
 
