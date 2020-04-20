@@ -38,7 +38,6 @@ namespace Straitjacket.Utility
                 return client.DownloadString(URL);
             }
         }
-
         internal static bool TryReadAllText(string URL, out string text)
         {
             try
@@ -53,22 +52,21 @@ namespace Straitjacket.Utility
             }
         }
 
-        internal static T ReadJSON<T>(string URL) where T : class
+        internal static TJsonObject ReadJSON<TJsonObject>(string URL) where TJsonObject : class
         {
             var text = ReadAllText(URL);
-            return JsonConvert.DeserializeObject<T>(text);
+            return JsonConvert.DeserializeObject<TJsonObject>(text);
         }
-
-        internal static bool TryReadJSON<T>(string URL, out T JSON) where T : class
+        internal static bool TryReadJSON<TJsonObject>(string URL, out TJsonObject JsonObject) where TJsonObject : class
         {
             try
             {
-                JSON = ReadJSON<T>(URL);
+                JsonObject = ReadJSON<TJsonObject>(URL);
                 return true;
             }
             catch
             {
-                JSON = null;
+                JsonObject = null;
                 return false;
             }
         }
