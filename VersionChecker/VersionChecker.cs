@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using Oculus.Newtonsoft.Json;
 using Straitjacket.Utility.VersionFormats;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -24,8 +26,9 @@ namespace Straitjacket.Utility
         /// </summary>
         /// <param name="URL">The URL at which the plain text file containing the latest version number can be found.</param>
         /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod's assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod's assembly.</param>
+        /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
+        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
+        /// compiled assembly.</param>
         public static void Check(string URL, Version currentVersion = null, string displayName = null)
         {
             Singleton();
@@ -36,8 +39,17 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            currentVersion = currentVersion ?? assembly.GetName().Version;
-            displayName = displayName ?? assembly.GetName().Name;
+            if (currentVersion == null)
+            {
+                if (TryGetDefaultCurrentVersion(assembly, out var version))
+                {
+                    currentVersion = new Version(version);
+                }
+            }
+            if (displayName == null)
+            {
+                TryGetDefaultDisplayName(assembly, out displayName);
+            }
 
             string prefix;
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
@@ -83,8 +95,9 @@ namespace Straitjacket.Utility
         /// <typeparam name="TVersionFormat">The formatting to use for version number parsing and comparisons.</typeparam>
         /// <param name="URL">The URL at which the plain text file containing the latest version number can be found.</param>
         /// <param name="currentVersion">A <typeparamref name="TVersionFormat"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod's assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod's assembly.</param>
+        /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
+        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
+        /// compiled assembly.</param>
         public static void Check<TVersionFormat>(string URL, TVersionFormat currentVersion = null, string displayName = null)
             where TVersionFormat : VersionFormat, new()
         {
@@ -98,9 +111,15 @@ namespace Straitjacket.Utility
 
             if (currentVersion == null)
             {
-                currentVersion = new TVersionFormat { Version = assembly.GetName().Version.ToStringParsed() };
+                if (TryGetDefaultCurrentVersion(assembly, out var version))
+                {
+                    currentVersion = new TVersionFormat { Version = version };
+                }
             }
-            displayName = displayName ?? assembly.GetName().Name;
+            if (displayName == null)
+            {
+                TryGetDefaultDisplayName(assembly, out displayName);
+            }
 
             string prefix;
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
@@ -146,8 +165,9 @@ namespace Straitjacket.Utility
         /// <param name="URL">The URL at which the JSON file containing the latest version number can be found.</param>
         /// <param name="versionProperty">The name of the property in <typeparamref name="TJsonObject"/> which holds the version number.</param>
         /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod's assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod's assembly.</param>
+        /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
+        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
+        /// compiled assembly.</param>
         public static void Check<TJsonObject>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
             where TJsonObject : class
         {
@@ -159,8 +179,17 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            currentVersion = currentVersion ?? assembly.GetName().Version;
-            displayName = displayName ?? assembly.GetName().Name;
+            if (currentVersion == null)
+            {
+                if (TryGetDefaultCurrentVersion(assembly, out var version))
+                {
+                    currentVersion = new Version(version);
+                }
+            }
+            if (displayName == null)
+            {
+                TryGetDefaultDisplayName(assembly, out displayName);
+            }
 
             string prefix;
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
@@ -207,8 +236,9 @@ namespace Straitjacket.Utility
         /// <param name="URL">The URL at which the JSON file containing the latest version number can be found.</param>
         /// <param name="versionProperty">The name of the property in <typeparamref name="TJsonObject"/> which holds the version number.</param>
         /// <param name="currentVersion">A <typeparamref name="TVersionFormat"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod's assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod's assembly.</param>
+        /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
+        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
+        /// compiled assembly.</param>
         public static void Check<TVersionFormat, TJsonObject>(string URL, string versionProperty = "Version",
             TVersionFormat currentVersion = null, string displayName = null)
             where TVersionFormat : VersionFormat, new()
@@ -224,9 +254,15 @@ namespace Straitjacket.Utility
 
             if (currentVersion == null)
             {
-                currentVersion = new TVersionFormat { Version = assembly.GetName().Version.ToStringParsed() };
+                if (TryGetDefaultCurrentVersion(assembly, out var version))
+                {
+                    currentVersion = new TVersionFormat { Version = version };
+                }
             }
-            displayName = displayName ?? assembly.GetName().Name;
+            if (displayName == null)
+            {
+                TryGetDefaultDisplayName(assembly, out displayName);
+            }
 
             string prefix;
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
@@ -262,6 +298,62 @@ namespace Straitjacket.Utility
                 }
             };
             CheckedVersions[assembly].UpdateLatestVersion();
+        }
+
+        internal static string GetDefaultCurrentVersion(Assembly assembly)
+        {
+            var modJson = Path.Combine(Path.GetDirectoryName(assembly.Location), "mod.json");
+            if (File.Exists(modJson))
+            {
+                try
+                {
+                    var text = File.ReadAllText(modJson);
+                    return JsonConvert.DeserializeObject<ModJson>(text).Version;
+                }
+                catch { }
+            }
+            return assembly.GetName().Version.ToStringParsed();
+        }
+        internal static bool TryGetDefaultCurrentVersion(Assembly assembly, out string currentVersion)
+        {
+            try
+            {
+                currentVersion = GetDefaultCurrentVersion(assembly);
+                return true;
+            }
+            catch
+            {
+                currentVersion = null;
+                return false;
+            }
+        }
+
+        internal static string GetDefaultDisplayName(Assembly assembly)
+        {
+            var modJson = Path.Combine(Path.GetDirectoryName(assembly.Location), "mod.json");
+            if (File.Exists(modJson))
+            {
+                try
+                {
+                    var text = File.ReadAllText(modJson);
+                    return JsonConvert.DeserializeObject<ModJson>(text).DisplayName;
+                }
+                catch { }
+            }
+            return assembly.GetName().Name;
+        }
+        internal static bool TryGetDefaultDisplayName(Assembly assembly, out string displayName)
+        {
+            try
+            {
+                displayName = GetDefaultDisplayName(assembly);
+                return true;
+            }
+            catch
+            {
+                displayName = null;
+                return false;
+            }
         }
 
         internal static TVersionFormat GetLatestVersion<TVersionFormat>(string URL)

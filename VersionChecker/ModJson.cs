@@ -9,5 +9,10 @@
         /// The Version property containing the version number.
         /// </summary>
         public string Version { get; set; }
+
+        /// <summary>
+        /// The DisplayName property containing the display name of the mod.
+        /// </summary>
+        public string DisplayName { get; set; }
     }
 }
