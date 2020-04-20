@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using Straitjacket.Utility.VersionFormats;
 using UnityEngine;
@@ -57,27 +56,24 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            if (!Networking.CheckConnection(URL))
-            {
-                Console.WriteLine($"{prefix} Unable to check for updates: Connection unavailable.");
-                return;
-            }
-
-            if (!TryGetLatestVersion<AssemblyVersion>(URL, out var latestVersion))
-            {
-                Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
-                return;
-            }
-
             var versionRecord = CheckedVersions[assembly] = new VersionRecord
             {
+                Assembly = assembly,
                 DisplayName = displayName,
                 Colour = GetColour(),
+                URL = URL,
                 CurrentVersion = new AssemblyVersion(currentVersion),
-                LatestVersion = latestVersion
+                Update = () =>
+                {
+                    if (TryGetLatestVersion<AssemblyVersion>(URL, out var latestVersion))
+                    {
+                        CheckedVersions[assembly].LatestVersion = latestVersion;
+                        return true;
+                    }
+                    return false;
+                }
             };
-
-            Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
+            CheckedVersions[assembly].UpdateLatestVersion();
         }
 
         /// <summary>
@@ -123,27 +119,24 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            if (!Networking.CheckConnection(URL))
-            {
-                Console.WriteLine($"{prefix} Unable to check for updates: Connection unavailable.");
-                return;
-            }
-
-            if (!TryGetLatestVersion<TVersionFormat>(URL, out var latestVersion))
-            {
-                Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
-                return;
-            }
-
             var versionRecord = CheckedVersions[assembly] = new VersionRecord
             {
+                Assembly = assembly,
                 DisplayName = displayName,
                 Colour = GetColour(),
+                URL = URL,
                 CurrentVersion = currentVersion,
-                LatestVersion = latestVersion
+                Update = () =>
+                {
+                    if (TryGetLatestVersion<TVersionFormat>(URL, out var latestVersion))
+                    {
+                        CheckedVersions[assembly].LatestVersion = latestVersion;
+                        return true;
+                    }
+                    return false;
+                }
             };
-
-            Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
+            CheckedVersions[assembly].UpdateLatestVersion();
         }
 
         /// <summary>
@@ -185,27 +178,24 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            if (!Networking.CheckConnection(URL))
-            {
-                Console.WriteLine($"{prefix} Unable to check for updates: Connection unavailable.");
-                return;
-            }
-
-            if (!TryGetLatestVersion<AssemblyVersion, TJsonObject>(URL, typeof(TJsonObject).GetProperty(versionProperty), out var latestVersion))
-            {
-                Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
-                return;
-            }
-
             var versionRecord = CheckedVersions[assembly] = new VersionRecord
             {
+                Assembly = assembly,
                 DisplayName = displayName,
                 Colour = GetColour(),
+                URL = URL,
                 CurrentVersion = new AssemblyVersion(currentVersion),
-                LatestVersion = latestVersion
+                Update = () =>
+                {
+                    if (TryGetLatestVersion<AssemblyVersion, TJsonObject>(URL, typeof(TJsonObject).GetProperty(versionProperty), out var version))
+                    {
+                        CheckedVersions[assembly].LatestVersion = version;
+                        return true;
+                    }
+                    return false;
+                }
             };
-
-            Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
+            CheckedVersions[assembly].UpdateLatestVersion();
         }
 
         /// <summary>
@@ -254,39 +244,37 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            if (!Networking.CheckConnection(URL))
-            {
-                Console.WriteLine($"{prefix} Unable to check for updates: Connection unavailable.");
-                return;
-            }
-
-            if (!TryGetLatestVersion<TVersionFormat, TJsonObject>(URL, typeof(TJsonObject).GetProperty(versionProperty), out var latestVersion))
-            {
-                Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
-                return;
-            }
-
             var versionRecord = CheckedVersions[assembly] = new VersionRecord
             {
+                Assembly = assembly,
                 DisplayName = displayName,
                 Colour = GetColour(),
+                URL = URL,
                 CurrentVersion = currentVersion,
-                LatestVersion = latestVersion
+                Update = () =>
+                {
+                    if (TryGetLatestVersion<TVersionFormat, TJsonObject>(URL, typeof(TJsonObject).GetProperty(versionProperty), out var version))
+                    {
+                        CheckedVersions[assembly].LatestVersion = version;
+                        return true;
+                    }
+                    return false;
+                }
             };
-
-            Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
+            CheckedVersions[assembly].UpdateLatestVersion();
         }
 
-        private static TVersionFormat GetLatestVersion<TVersionFormat>(string URL)
+        internal static TVersionFormat GetLatestVersion<TVersionFormat>(string URL)
             where TVersionFormat : VersionFormat, new()
         {
             if (Networking.TryReadAllText(URL, out var text))
             {
                 return new TVersionFormat() { Version = text.Trim() };
             }
-            return null;
+
+            throw new NullReferenceException();
         }
-        private static bool TryGetLatestVersion<TVersionFormat>(string URL, out TVersionFormat latestVersion)
+        internal static bool TryGetLatestVersion<TVersionFormat>(string URL, out TVersionFormat latestVersion)
             where TVersionFormat : VersionFormat, new()
         {
             try
@@ -301,7 +289,7 @@ namespace Straitjacket.Utility
             }
         }
 
-        private static TVersionFormat GetLatestVersion<TVersionFormat, TJsonObject>(string URL, PropertyInfo versionProperty)
+        internal static TVersionFormat GetLatestVersion<TVersionFormat, TJsonObject>(string URL, PropertyInfo versionProperty)
             where TVersionFormat : VersionFormat, new()
             where TJsonObject : class
         {
@@ -314,9 +302,10 @@ namespace Straitjacket.Utility
             {
                 return new TVersionFormat() { Version = (string)versionProperty.GetValue(JSON, null) };
             }
-            return null;
+
+            throw new NullReferenceException();
         }
-        private static bool TryGetLatestVersion<TVersionFormat, TJsonObject>(string URL, PropertyInfo versionProperty, out TVersionFormat latestVersion)
+        internal static bool TryGetLatestVersion<TVersionFormat, TJsonObject>(string URL, PropertyInfo versionProperty, out TVersionFormat latestVersion)
             where TVersionFormat : VersionFormat, new()
             where TJsonObject : class
         {
@@ -426,32 +415,10 @@ namespace Straitjacket.Utility
                 for (var i = 0; i < 3; i++)
                 {
                     ErrorMessage.AddError($"[<color={versionRecord.Colour}>{versionRecord.DisplayName}</color>] " +
-                        VersionMessage(versionRecord, true));
+                        versionRecord.Message(true));
 
                     yield return new WaitForSeconds(5);
                 }
-            }
-        }
-
-        private static string VersionMessage(VersionRecord versionRecord, bool splitLines = false)
-        {
-            switch (versionRecord.State)
-            {
-                case VersionRecord.VersionState.Ahead:
-                    return $"Currently running v{versionRecord.CurrentVersion}." +
-                    (splitLines ? Environment.NewLine : " ") +
-                    $"The latest release version is v{versionRecord.LatestVersion}. " +
-                    $"We are ahead.";
-                case VersionRecord.VersionState.Current:
-                    return $"Currently running v{versionRecord.CurrentVersion}. Up to date.";
-                case VersionRecord.VersionState.Outdated:
-                    return $"A new version has been released: v{versionRecord.LatestVersion}." +
-                    (splitLines ? Environment.NewLine : " ") +
-                    $"Currently running v{versionRecord.CurrentVersion}. " +
-                    "Please update at your earliest convenience!";
-                case VersionRecord.VersionState.Unknown:
-                default:
-                    return "Could not compare versions.";
             }
         }
     }
