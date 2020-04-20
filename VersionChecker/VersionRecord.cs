@@ -1,4 +1,6 @@
-﻿using Straitjacket.Utility.VersionFormats;
+﻿using System;
+using System.Reflection;
+using Straitjacket.Utility.VersionFormats;
 
 namespace Straitjacket.Utility
 {
@@ -6,13 +8,12 @@ namespace Straitjacket.Utility
     {
         public enum VersionState { Unknown, Outdated, Current, Ahead }
 
+        public Assembly Assembly;
         public string DisplayName;
         public string Colour;
         public string URL;
         public VersionFormat CurrentVersion;
         public VersionFormat LatestVersion;
-        public delegate bool TryGetLatestVersionFunc(string URL, out VersionFormat latestVersion);
-        public TryGetLatestVersionFunc TryGetLatestVersion;
         public VersionState State
         {
             get
@@ -36,11 +37,56 @@ namespace Straitjacket.Utility
             }
         }
 
-        public void Update()
+        public void UpdateLatestVersion()
         {
-            if (TryGetLatestVersion != null && TryGetLatestVersion(URL, out var latestVersion))
+            if (Update != null)
             {
-                LatestVersion = latestVersion;
+                string prefix;
+                if (Assembly == Assembly.GetAssembly(typeof(VersionChecker)))
+                {
+                    prefix = "[VersionChecker]";
+                }
+                else
+                {
+                    prefix = $"[VersionChecker] [{DisplayName}]";
+                }
+
+                if (!Networking.CheckConnection(URL))
+                {
+                    Console.WriteLine($"{prefix} Unable to check for updates: Connection unavailable.");
+                    return;
+                }
+
+                if (!Update())
+                {
+                    Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
+                    return;
+                }
+
+                Console.WriteLine($"{prefix} {Message()}");
+            }
+        }
+        public Func<bool> Update;
+
+        public string Message(bool splitLines = false)
+        {
+            switch (State)
+            {
+                case VersionState.Ahead:
+                    return $"Currently running v{CurrentVersion}." +
+                    (splitLines ? Environment.NewLine : " ") +
+                    $"The latest release version is v{LatestVersion}. " +
+                    $"We are ahead.";
+                case VersionState.Current:
+                    return $"Currently running v{CurrentVersion}. Up to date.";
+                case VersionState.Outdated:
+                    return $"A new version has been released: v{LatestVersion}." +
+                    (splitLines ? Environment.NewLine : " ") +
+                    $"Currently running v{CurrentVersion}. " +
+                    "Please update at your earliest convenience!";
+                case VersionState.Unknown:
+                default:
+                    return "Could not compare versions.";
             }
         }
     }
