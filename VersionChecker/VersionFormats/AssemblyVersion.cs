@@ -13,7 +13,7 @@ namespace Straitjacket.Utility.VersionFormats
         /// <seealso cref="AssemblyVersion(string)"/>
         /// <seealso cref="AssemblyVersion(Version)"/>
         public AssemblyVersion() { }
-        
+
         /// <summary>
         /// Initailises a new <see cref="AssemblyVersion"/> instance using the specified <see cref="string"/>.
         /// </summary>
@@ -21,7 +21,7 @@ namespace Straitjacket.Utility.VersionFormats
         /// <seealso cref="AssemblyVersion(Version)"/>
         /// <seealso cref="AssemblyVersion()"/>
         public AssemblyVersion(string version) => Version = new Version(version).ToStringParsed();
-        
+
         /// <summary>
         /// Initialises a new <see cref="AssemblyVersion"/> instance using the specified <see cref="AssemblyVersion"/>.
         /// </summary>
@@ -29,7 +29,7 @@ namespace Straitjacket.Utility.VersionFormats
         /// <seealso cref="AssemblyVersion(string)"/>
         /// <seealso cref="AssemblyVersion()"/>
         public AssemblyVersion(Version version) => Version = version.ToStringParsed();
-        
+
         /// <summary>
         /// Compares the current <see cref="AssemblyVersion"/> to a specified <see cref="VersionFormat"/> and returns an indicataion of their relative values.
         /// </summary>

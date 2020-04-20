@@ -1,5 +1,4 @@
-﻿using System;
-using Semver;
+﻿using Semver;
 
 namespace Straitjacket.Utility.VersionFormats
 {
