@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using Oculus.Newtonsoft.Json;
+using Oculus.Platform.Models;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -53,7 +54,8 @@ namespace Straitjacket.Utility
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
             {
                 prefix = "[VersionChecker]";
-            } else
+            }
+            else
             {
                 prefix = $"[VersionChecker] [{displayName}]";
             }
@@ -71,8 +73,7 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            var latestVersion = GetLatestVersion(URL);
-            if (latestVersion == null)
+            if (!TryGetLatestVersion(URL, out var latestVersion))
             {
                 Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
                 return;
@@ -134,8 +135,7 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            var latestVersion = GetLatestVersion<T>(URL, typeof(T).GetProperty(versionProperty));
-            if (latestVersion == null)
+            if (!TryGetLatestVersion<T>(URL, typeof(T).GetProperty(versionProperty), out var latestVersion))
             {
                 Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
                 return;
@@ -154,38 +154,50 @@ namespace Straitjacket.Utility
 
         private static Version GetLatestVersion(string URL)
         {
+            if (Networking.TryReadAllText(URL, out var text))
+            {
+                return new Version(text.Trim());
+            }
+            return null;
+        }
+        private static bool TryGetLatestVersion(string URL, out Version latestVersion)
+        {
             try
             {
-                using (var client = new WebClient())
-                {
-                    var version = client.DownloadString(URL);
-                    return new Version(version.Trim());
-                }
+                latestVersion = GetLatestVersion(URL);
+                return true;
             }
             catch
             {
-                return null;
+                latestVersion = null;
+                return false;
             }
         }
+
         private static Version GetLatestVersion<T>(string URL, PropertyInfo versionProperty) where T : class
         {
             if (versionProperty.PropertyType != typeof(string))
             {
-                return null;
+                throw new ArgumentException("A property of Type string is required.", "versionProperty");
             }
 
+            if (Networking.TryReadJSON<T>(URL, out var JSON))
+            {
+                return new Version((string)versionProperty.GetValue(JSON, null));
+            }
+            return null;
+        }
+        private static bool TryGetLatestVersion<T>(string URL, PropertyInfo versionProperty, out Version latestVersion) where T : class
+        {
             try
             {
-                using (var client = new WebClient())
-                {
-                    var data = client.DownloadString(URL);
-                    var deserializedData = JsonConvert.DeserializeObject<T>(data);
-                    return new Version((string)versionProperty.GetValue(deserializedData, null));
-                }
+                latestVersion = GetLatestVersion<T>(URL, versionProperty);
+                return true;
             }
             catch
             {
-                return null;
+                latestVersion = null;
+                return false;
             }
         }
 
