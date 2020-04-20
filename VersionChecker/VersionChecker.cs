@@ -348,7 +348,7 @@ namespace Straitjacket.Utility
             {
                 return $"A new version has been released: v{versionRecord.LatestVersion.ToStringParsed()}." +
                     (splitLines ? Environment.NewLine : " ") +
-                    $"Currently running v{versionRecord.CurrentVersion.ToString()}. " +
+                    $"Currently running v{versionRecord.CurrentVersion.ToStringParsed()}. " +
                     "Please update at your earliest convenience!";
             }
             else if (IsAhead(versionRecord))
