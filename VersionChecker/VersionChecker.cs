@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using Oculus.Newtonsoft.Json;
+using QModManager.API;
+using SMLHelper.V2.Handlers;
+using SMLHelper.V2.Json.ExtensionMethods;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -13,47 +16,53 @@ namespace Straitjacket.Utility
     /// <summary>
     /// An API for checking the client is running the latest version of a mod, informing the user if it is not.
     /// </summary>
-    public class VersionChecker : MonoBehaviour
+    public partial class VersionChecker : MonoBehaviour
     {
-        private struct VersionRecord
-        {
-            public string DisplayName;
-            public Version CurrentVersion;
-            public Version LatestVersion;
-            public string Colour;
-        }
-
         private static VersionChecker main = null;
         internal static VersionChecker Singleton() => main = main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
 
-        private static Dictionary<Assembly, VersionRecord> CheckedVersions = new Dictionary<Assembly, VersionRecord>();
+        private static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
 
         /// <summary>
-        /// Entry point for the VersionChecker API when the latest version number is stored in plain text at a given URL.
+        /// Entry point for the VersionChecker API when the latest version number is stored in plain text at a given URL as an Assembly Version.
         /// </summary>
         /// <param name="URL">The URL at which the plain text file containing the latest version number can be found.</param>
         /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod's assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from
-        /// the mod's assembly.</param>
+        /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
+        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
+        /// compiled assembly.</param>
+        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.")]
         public static void Check(string URL, Version currentVersion = null, string displayName = null)
         {
             Singleton();
 
+
             var assembly = Assembly.GetCallingAssembly();
-            if (CheckedVersions.ContainsKey(assembly))
+            var qMod = QModServices.Main.FindModByAssembly(assembly);
+            if (qMod == null)
+            {
+                throw new NullReferenceException();
+            }
+            if (CheckedVersions.ContainsKey(qMod))
             {
                 return;
             }
 
-            currentVersion = currentVersion ?? assembly.GetName().Version;
-            displayName = displayName ?? assembly.GetName().Name;
+            if (currentVersion == null)
+            {
+                currentVersion = qMod.ParsedVersion;
+            }
+            if (displayName == null)
+            {
+                displayName = qMod.DisplayName;
+            }
 
-            string prefix = null;
+            string prefix;
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
             {
                 prefix = "[VersionChecker]";
-            } else
+            }
+            else
             {
                 prefix = $"[VersionChecker] [{displayName}]";
             }
@@ -65,54 +74,63 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            if (!CheckConnection(URL))
+            var versionRecord = CheckedVersions[qMod] = new VersionRecord
             {
-                Console.WriteLine($"{prefix} Unable to check for updates: Connection unavailable.");
-                return;
-            }
-
-            var latestVersion = GetLatestVersion(URL);
-            if (latestVersion == null)
-            {
-                Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
-                return;
-            }
-
-            var versionRecord = CheckedVersions[assembly] = new VersionRecord
-            {
+                Assembly = assembly,
                 DisplayName = displayName,
+                Colour = GetColour(),
+                URL = URL,
                 CurrentVersion = currentVersion,
-                LatestVersion = latestVersion,
-                Colour = GetColour()
+                Update = () =>
+                {
+                    if (TryGetLatestVersion(URL, out var latestVersion))
+                    {
+                        CheckedVersions[qMod].LatestVersion = latestVersion;
+                        return true;
+                    }
+                    return false;
+                }
             };
-
-            Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
+            Console.WriteLine($"{prefix} Currently running v{currentVersion}.");
         }
+
         /// <summary>
-        /// Entry point for the VersionChecker API when the latest version number is stored in a JSON file at a given URL.
+        /// Entry point for the VersionChecker API when the latest version number is stored in a JSON file at a given URL as an Assembly Version.
         /// </summary>
-        /// <typeparam name="T">The type of the class which will be used for deserializing the JSON file.</typeparam>
+        /// <typeparam name="TJsonObject">The type of the class which will be used for deserializing the JSON file.</typeparam>
         /// <param name="URL">The URL at which the JSON file containing the latest version number can be found.</param>
-        /// <param name="versionProperty">The name of the property in <typeparamref name="T"/> which holds the version number.</param>
+        /// <param name="versionProperty">The name of the property in <typeparamref name="TJsonObject"/> which holds the version number.</param>
         /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod's assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from
-        /// the mod's assembly.</param>
-        public static void Check<T>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
-            where T : class
+        /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
+        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
+        /// compiled assembly.</param>
+        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.")]
+        public static void Check<TJsonObject>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
+            where TJsonObject : class
         {
             Singleton();
 
             var assembly = Assembly.GetCallingAssembly();
-            if (CheckedVersions.ContainsKey(assembly))
+            var qMod = QModServices.Main.FindModByAssembly(assembly);
+            if (qMod == null)
+            {
+                throw new NullReferenceException();
+            }
+            if (CheckedVersions.ContainsKey(qMod))
             {
                 return;
             }
 
-            currentVersion = currentVersion ?? assembly.GetName().Version;
-            displayName = displayName ?? assembly.GetName().Name;
+            if (currentVersion == null)
+            {
+                currentVersion = qMod.ParsedVersion;
+            }
+            if (displayName == null)
+            {
+                displayName = qMod.DisplayName;
+            }
 
-            string prefix = null;
+            string prefix;
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
             {
                 prefix = "[VersionChecker]";
@@ -128,101 +146,129 @@ namespace Straitjacket.Utility
                 return;
             }
 
-            if (!CheckConnection(URL))
+            var versionRecord = CheckedVersions[qMod] = new VersionRecord
             {
-                Console.WriteLine($"{prefix} Unable to check for updates: Connection unavailable.");
-                return;
-            }
-
-            var latestVersion = GetLatestVersion<T>(URL, typeof(T).GetProperty(versionProperty));
-            if (latestVersion == null)
-            {
-                Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
-                return;
-            }
-
-            var versionRecord = CheckedVersions[assembly] = new VersionRecord
-            {
+                Assembly = assembly,
                 DisplayName = displayName,
+                Colour = GetColour(),
+                URL = URL,
                 CurrentVersion = currentVersion,
-                LatestVersion = latestVersion,
-                Colour = GetColour()
-            };
-
-            Console.WriteLine($"{prefix} {VersionMessage(versionRecord)}");
-        }
-
-        private static Version GetLatestVersion(string URL)
-        {
-            try
-            {
-                using (var client = new WebClient())
+                Update = () =>
                 {
-                    var version = client.DownloadString(URL);
-                    return new Version(version.Trim());
-                }
-            }
-            catch
-            {
-                return null;
-            }
-        }
-        private static Version GetLatestVersion<T>(string URL, PropertyInfo versionProperty) where T : class
-        {
-            if (versionProperty.PropertyType != typeof(string))
-            {
-                return null;
-            }
-
-            try
-            {
-                using (var client = new WebClient())
-                {
-                    var data = client.DownloadString(URL);
-                    var deserializedData = JsonConvert.DeserializeObject<T>(data);
-                    return new Version((string)versionProperty.GetValue(deserializedData, null));
-                }
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private const string GOOGLE_204_URL = "http://google.com/generate_204";
-        private static bool CheckConnection(string URL = GOOGLE_204_URL)
-        {
-            Func<bool> runCheck = () =>
-            {
-                try
-                {
-                    using (var client = new WebClient())
-                    using (client.OpenRead(URL))
+                    if (TryGetLatestVersion<TJsonObject>(URL, typeof(TJsonObject).GetProperty(versionProperty), out var version))
                     {
+                        CheckedVersions[qMod].LatestVersion = version;
                         return true;
                     }
-                }
-                catch
-                {
                     return false;
                 }
             };
+            Console.WriteLine($"{prefix} Currently running v{currentVersion}.");
+        }
 
-            if (URL != GOOGLE_204_URL)
+        internal static void Check(string URL, IQMod qMod)
+        {
+            Singleton();
+
+            if (qMod == null)
             {
-                var preliminary = CheckConnection(GOOGLE_204_URL);
-                if (preliminary)
-                {
-                    return preliminary;
-                }
-                return runCheck();
+                throw new NullReferenceException();
+            }
+            if (CheckedVersions.ContainsKey(qMod))
+            {
+                return;
+            }
+
+            string prefix;
+            if (qMod.LoadedAssembly == Assembly.GetAssembly(typeof(VersionChecker)))
+            {
+                prefix = "[VersionChecker]";
             }
             else
             {
-                return runCheck();
+                prefix = $"[VersionChecker] [{qMod.DisplayName}]";
+            }
+
+            if (qMod.ParsedVersion == null)
+            {
+                Console.WriteLine($"{prefix} There was an error retrieving the current version.");
+                return;
+            }
+
+            var versionRecord = CheckedVersions[qMod] = new VersionRecord
+            {
+                Assembly = qMod.LoadedAssembly,
+                DisplayName = qMod.DisplayName,
+                Colour = GetColour(),
+                URL = URL,
+                CurrentVersion = qMod.ParsedVersion,
+                Update = () =>
+                {
+                    if (TryGetLatestVersion<ModJson>(URL, typeof(ModJson).GetProperty("Version"), out var version))
+                    {
+                        CheckedVersions[qMod].LatestVersion = version;
+                        return true;
+                    }
+                    return false;
+                }
+            };
+            Console.WriteLine($"{prefix} Currently running v{qMod.ParsedVersion}.");
+        }
+
+        internal static Version GetLatestVersion(string URL)
+        {
+            if (Networking.TryReadAllText(URL, out var text) && !string.IsNullOrWhiteSpace(text))
+            {
+                return new Version(text.Trim());
+            }
+
+            throw new NullReferenceException();
+        }
+        internal static bool TryGetLatestVersion(string URL, out Version latestVersion)
+        {
+            try
+            {
+                latestVersion = GetLatestVersion(URL);
+                return true;
+            }
+            catch
+            {
+                latestVersion = null;
+                return false;
             }
         }
 
+        internal static Version GetLatestVersion<TJsonObject>(string URL, PropertyInfo versionProperty)
+            where TJsonObject : class
+        {
+            if (versionProperty.PropertyType != typeof(string))
+            {
+                throw new ArgumentException("A property of Type string is required.", "versionProperty");
+            }
+
+            if (Networking.TryReadJSON<TJsonObject>(URL, out var JSON))
+            {
+                return new Version((string)versionProperty.GetValue(JSON, null));
+            }
+
+            throw new NullReferenceException();
+        }
+        internal static bool TryGetLatestVersion<TJsonObject>(string URL, PropertyInfo versionProperty, out Version latestVersion)
+            where TJsonObject : class
+        {
+            try
+            {
+                latestVersion = GetLatestVersion<TJsonObject>(URL, versionProperty);
+                return true;
+            }
+            catch
+            {
+                latestVersion = null;
+                return false;
+            }
+        }
+
+        internal static Config config = new Config();
         private void Awake()
         {
             if (main != null)
@@ -231,6 +277,9 @@ namespace Straitjacket.Utility
             }
             else
             {
+                DontDestroyOnLoad(this);
+                config.Load();
+                OptionsPanelHandler.RegisterModOptions(new Options());
                 SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
                 SceneManager.sceneLoaded += SceneManager_sceneLoaded;
             }
@@ -250,15 +299,11 @@ namespace Straitjacket.Utility
         {
             if (Singleton() != null && !Singleton().IsRunning)
             {
-                if (scene.name == "Main")
+                if (scene.name == "StartScreen")
                 {
                     Singleton().IsRunning = true;
                     Singleton().StartCoroutine(Singleton().PrintOutdatedVersions());
-                }
-                else if (mode == LoadSceneMode.Single)
-                {
-                    Singleton().IsRunning = false;
-                    Singleton().StopAllCoroutines();
+                    SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
                 }
             }
         }
@@ -290,9 +335,17 @@ namespace Straitjacket.Utility
 
         private IEnumerator PrintOutdatedVersions()
         {
+            yield return new WaitUntil(() => ShouldCheckVersions());
+            foreach (var versionRecord in CheckedVersions.Values)
+            {
+                versionRecord.UpdateLatestVersion();
+            }
+            config.LastChecked = DateTime.UtcNow;
+            config.Save();
+
+            yield return new WaitForSecondsRealtime(1);
             yield return new WaitForFixedUpdate();
-            yield return new WaitWhile(() => WaitScreen.main == null);
-            yield return new WaitWhile(() => WaitScreen.main.isShown);
+            yield return new WaitWhile(() => WaitScreen.main?.isShown ?? false);
             yield return new WaitForFixedUpdate();
 
             List<Coroutine> coroutines = new List<Coroutine>();
@@ -305,50 +358,45 @@ namespace Straitjacket.Utility
             {
                 yield return coroutine;
             }
-
-            yield return new WaitForSecondsRealtime(1800);
-            yield return PrintOutdatedVersions();
         }
 
         private IEnumerator PrintOutdatedVersion(VersionRecord versionRecord)
         {
-            if (IsOutdated(versionRecord))
+            if (versionRecord.State == VersionRecord.VersionState.Outdated)
             {
                 for (var i = 0; i < 3; i++)
                 {
                     ErrorMessage.AddError($"[<color={versionRecord.Colour}>{versionRecord.DisplayName}</color>] " +
-                        VersionMessage(versionRecord, true));
+                        versionRecord.Message(true));
 
                     yield return new WaitForSeconds(5);
                 }
             }
         }
 
-        private static bool IsOutdated(VersionRecord versionRecord) => versionRecord.CurrentVersion < versionRecord.LatestVersion &&
-            versionRecord.CurrentVersion.ToStringParsed() != versionRecord.LatestVersion.ToStringParsed();
-
-        private static bool IsAhead(VersionRecord versionRecord) => versionRecord.CurrentVersion > versionRecord.LatestVersion &&
-            versionRecord.CurrentVersion.ToStringParsed() != versionRecord.LatestVersion.ToStringParsed();
-
-        private static string VersionMessage(VersionRecord versionRecord, bool splitLines = false)
+        private bool startupChecked = false;
+        private bool ShouldCheckVersions()
         {
-            if (IsOutdated(versionRecord))
+            if (config.Frequency == CheckFrequency.Startup)
             {
-                return $"A new version has been released: v{versionRecord.LatestVersion.ToStringParsed()}." +
-                    (splitLines ? Environment.NewLine : " ") +
-                    $"Currently running v{versionRecord.CurrentVersion.ToString()}. " +
-                    "Please update at your earliest convenience!";
+                return startupChecked ? false : startupChecked = true;
             }
-            else if (IsAhead(versionRecord))
+
+            startupChecked = true;
+
+            switch (config.Frequency)
             {
-                return $"Currently running v{versionRecord.CurrentVersion.ToStringParsed()}." +
-                    (splitLines ? Environment.NewLine : " ") +
-                    $"The latest release version is v{versionRecord.LatestVersion.ToStringParsed()}. " +
-                    $"We are ahead.";
-            }
-            else
-            {
-                return $"Currently running v{versionRecord.CurrentVersion.ToStringParsed()}. Up to date.";
+                default:
+                case CheckFrequency.Never:
+                    return false;
+                case CheckFrequency.Hourly:
+                    return DateTime.UtcNow > config.LastChecked.AddHours(1);
+                case CheckFrequency.Daily:
+                    return DateTime.UtcNow > config.LastChecked.AddDays(1);
+                case CheckFrequency.Weekly:
+                    return DateTime.UtcNow > config.LastChecked.AddDays(7);
+                case CheckFrequency.Monthly:
+                    return DateTime.UtcNow > config.LastChecked.AddMonths(1);
             }
         }
     }
