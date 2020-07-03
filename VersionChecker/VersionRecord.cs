@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Reflection;
-using Straitjacket.Utility.VersionFormats;
 
 namespace Straitjacket.Utility
 {
@@ -12,13 +11,13 @@ namespace Straitjacket.Utility
         public string DisplayName;
         public string Colour;
         public string URL;
-        public VersionFormat CurrentVersion;
-        public VersionFormat LatestVersion;
+        public Version CurrentVersion;
+        public Version LatestVersion;
         public VersionState State
         {
             get
             {
-                if (CurrentVersion == null || LatestVersion == null || CurrentVersion.Version == null || LatestVersion.Version == null)
+                if (CurrentVersion == null || LatestVersion == null || CurrentVersion == null || LatestVersion == null)
                 {
                     return VersionState.Unknown;
                 }

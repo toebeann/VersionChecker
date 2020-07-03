@@ -36,16 +36,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp_publicized">
-      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\publicized_assemblies\Assembly-CSharp_publicized.dll</HintPath>
+      <HintPath>..\..\..\..\QModManager\Dependencies\Assembly-CSharp_publicized.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Semver, Version=1.1.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\semver.1.1.2\lib\net40\Semver.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="QModInstaller">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\BepInEx\plugins\QMMLoader\QModInstaller.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -62,6 +61,12 @@
       <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\Subnautica_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExtensionMethods.cs" />
@@ -70,16 +75,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ModJson.cs" />
     <Compile Include="VersionChecker.cs" />
-    <Compile Include="VersionFormats\AssemblyVersion.cs" />
-    <Compile Include="VersionFormats\IVersionFormat.cs" />
-    <Compile Include="VersionFormats\SemVer.cs" />
-    <Compile Include="VersionFormats\VersionFormat.cs" />
     <Compile Include="VersionRecord.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
     <None Include="mod.json" />
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
