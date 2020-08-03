@@ -22,7 +22,7 @@ namespace Straitjacket.Utility
         public static void Patch()
         {
             VersionChecker.Check(
-                "https://raw.githubusercontent.com/tobeyStraitjacket/VersionChecker/master/VersionChecker/mod.json",
+                "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod.json",
                 QModServices.Main.FindModById("VersionChecker")
             );
 

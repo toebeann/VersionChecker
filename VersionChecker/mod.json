@@ -2,14 +2,14 @@
     "Id": "VersionChecker",
     "DisplayName": "VersionChecker",
     "Author": "Tobey Blaber",
-    "Version": "1.1.1",
+    "Version": "1.1.2",
     "AssemblyName": "Straitjacket.Utility.VersionChecker.dll",
     "Enable": true,
     "Game": "Both",
     "VersionDependencies": {
-        "SMLHelper": "2.7.0"
+        "SMLHelper": "2.8.0"
     },
     "VersionChecker": {
-        "LatestVersionURL": "https://raw.githubusercontent.com/tobeyStraitjacket/VersionChecker/master/VersionChecker/mod.json"
+        "LatestVersionURL": "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod.json"
     }
 }
