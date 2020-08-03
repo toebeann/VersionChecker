@@ -7,7 +7,7 @@
     "Enable": true,
     "Game": "Both",
     "VersionDependencies": {
-        "SMLHelper": "2.8.0"
+        "SMLHelper": "2.8"
     },
     "VersionChecker": {
         "LatestVersionURL": "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod.json"
