@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using Oculus.Newtonsoft.Json;
 using QModManager.API;
 using SMLHelper.V2.Handlers;
-using SMLHelper.V2.Json.ExtensionMethods;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
