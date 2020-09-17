@@ -14,7 +14,7 @@ namespace Straitjacket.Utility
     /// <summary>
     /// An API for checking the client is running the latest version of a mod, informing the user if it is not.
     /// </summary>
-    public partial class VersionChecker : MonoBehaviour
+    public class VersionChecker : MonoBehaviourSingleton<VersionChecker>
     {
         internal enum CheckFrequency
         {
@@ -26,8 +26,7 @@ namespace Straitjacket.Utility
             Never
         }
 
-        private static VersionChecker main = null;
-        internal static VersionChecker Singleton() => main ??= new GameObject("VersionChecker").AddComponent<VersionChecker>();
+        internal static VersionChecker GetSingleton() => Main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
 
         internal static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
 
@@ -42,7 +41,7 @@ namespace Straitjacket.Utility
         [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.", true)]
         public static void Check(string URL, Version currentVersion = null, string displayName = null)
         {
-            Singleton();
+            GetSingleton();
 
             var assembly = Assembly.GetCallingAssembly();
             var qMod = QModServices.Main.FindModByAssembly(assembly);
@@ -115,7 +114,7 @@ namespace Straitjacket.Utility
         public static void Check<TJsonObject>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
             where TJsonObject : class
         {
-            Singleton();
+            GetSingleton();
 
             var assembly = Assembly.GetCallingAssembly();
             var qMod = QModServices.Main.FindModByAssembly(assembly);
@@ -175,7 +174,7 @@ namespace Straitjacket.Utility
 
         internal static void Check(string URL, IQMod qMod)
         {
-            Singleton();
+            GetSingleton();
 
             if (qMod == null)
             {
@@ -281,38 +280,28 @@ namespace Straitjacket.Utility
         }
 
         internal static Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
-        private void Awake()
+
+        /// <summary>
+        /// Called from Awake for the singleton instance of VersionChecker
+        /// </summary>
+        protected override void SingletonAwake()
         {
-            if (main != null)
-            {
-                DestroyImmediate(this);
-            }
-            else
-            {
-                DontDestroyOnLoad(this);
-                SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
-                SceneManager.sceneLoaded += SceneManager_sceneLoaded;
-            }
+            DontDestroyOnLoad(this);
+            SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
+            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
         }
 
-        private void OnDestroy()
-        {
-            if (main == this)
-            {
-                Singleton().StopAllCoroutines();
-                main = null;
-            }
-        }
+        private void OnDestroy() => StopAllCoroutines();
 
         private bool IsRunning = false;
         private static void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (Singleton() != null && !Singleton().IsRunning)
+            if (Main != null && !Main.IsRunning)
             {
                 if (scene.name == "StartScreen")
                 {
-                    Singleton().IsRunning = true;
-                    Singleton().StartCoroutine(Singleton().PrintOutdatedVersions());
+                    Main.IsRunning = true;
+                    Main.StartCoroutine(Main.PrintOutdatedVersions());
                     SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
                 }
             }

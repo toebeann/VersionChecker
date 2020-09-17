@@ -92,6 +92,7 @@
     <None Include="mod_SUBNAUTICA.json" />
   </ItemGroup>
   <Import Project="..\BepInEx.Subnautica.Logger\Logger\Logger.projitems" Label="Shared" />
+  <Import Project="..\UnityEngine.MonoBehaviourSingleton\MonoBehaviourSingleton\MonoBehaviourSingleton.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>echo f | xcopy "$(ProjectDir)mod_$(ConfigurationName).json" "$(TargetDir)$(SolutionName)\mod.json" /y
