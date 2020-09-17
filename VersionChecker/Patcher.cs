@@ -1,9 +1,11 @@
-﻿using System;
-using System.IO;
-using System.Linq;
+﻿using BepInEx.Logging;
 using Oculus.Newtonsoft.Json;
 using QModManager.API;
 using QModManager.API.ModLoading;
+using System;
+using System.IO;
+using System.Linq;
+using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Utility
 {
@@ -40,8 +42,8 @@ namespace Straitjacket.Utility
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[VersionChecker] Encountered an error while attempting to parse JSON: {modJsonPath}");
-                    Console.WriteLine(ex.Message);
+                    Logger.LogError($"Encountered an error while attempting to parse JSON: {modJsonPath}");
+                    Logger.LogError(ex.Message);
                 }
             }
         }
