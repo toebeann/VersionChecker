@@ -1,5 +1,9 @@
-﻿using System.Net;
+﻿#if SUBNAUTICA
 using Oculus.Newtonsoft.Json;
+#elif BELOWZERO
+using Newtonsoft.Json;
+#endif
+using System.Net;
 
 namespace Straitjacket.Utility
 {
@@ -53,10 +57,8 @@ namespace Straitjacket.Utility
         }
 
         internal static TJsonObject ReadJSON<TJsonObject>(string URL) where TJsonObject : class
-        {
-            var text = ReadAllText(URL);
-            return JsonConvert.DeserializeObject<TJsonObject>(text);
-        }
+            => JsonConvert.DeserializeObject<TJsonObject>(ReadAllText(URL));
+
         internal static bool TryReadJSON<TJsonObject>(string URL, out TJsonObject JsonObject) where TJsonObject : class
         {
             try
