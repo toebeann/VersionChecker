@@ -1,3 +1,6 @@
 [submodule "BepInEx.Subnautica.Logger"]
 	path = BepInEx.Subnautica.Logger
 	url = https://github.com/tobeyStraitjacket/BepInEx.Subnautica.Logger
+[submodule "UnityEngine.MonoBehaviourSingleton"]
+	path = UnityEngine.MonoBehaviourSingleton
+	url = https://github.com/tobeyStraitjacket/UnityEngine.MonoBehaviourSingleton
