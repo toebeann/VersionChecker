@@ -23,7 +23,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>bin\Debug\Straitjacket.Utility.VersionChecker.xml</DocumentationFile>
+    <DocumentationFile>..\Build\Straitjacket.Utility.VersionChecker.xml</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
     <GameDir>C:\Program Files (x86)\Steam\steamapps\common\Subnautica</GameDir>
     <DataDir>$(GameDir)\Subnautica_Data</DataDir>
@@ -37,7 +37,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>bin\Release\Straitjacket.Utility.VersionChecker.xml</DocumentationFile>
+    <DocumentationFile>..\Build\Straitjacket.Utility.VersionChecker.xml</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
     <GameDir>C:\Program Files (x86)\Steam\steamapps\common\SubnauticaZero</GameDir>
     <DataDir>$(GameDir)\SubnauticaZero_Data</DataDir>
