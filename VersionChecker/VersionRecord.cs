@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using UnityEngine;
+using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Utility
 {
@@ -46,22 +47,22 @@ namespace Straitjacket.Utility
                     string prefix;
                     if (Assembly == Assembly.GetAssembly(typeof(VersionChecker)))
                     {
-                        prefix = "[VersionChecker]";
+                        prefix = string.Empty;
                     }
                     else
                     {
-                        prefix = $"[VersionChecker] [{DisplayName}]";
+                        prefix = $"[{DisplayName}] ";
                     }
 
                     if (!Networking.CheckConnection(URL))
                     {
-                        Console.WriteLine($"{prefix} Unable to check for updates: Connection unavailable.");
+                        Logger.LogWarning($"{prefix}Unable to check for updates: Connection unavailable.");
                         return;
                     }
 
                     if (!Update())
                     {
-                        Console.WriteLine($"{prefix} There was an error retrieving the latest version.");
+                        Logger.LogError($"{prefix}There was an error retrieving the latest version.");
                         return;
                     }
                 }

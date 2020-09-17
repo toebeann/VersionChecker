@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Straitjacket.Utility</RootNamespace>
     <AssemblyName>Straitjacket.Utility.VersionChecker</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -23,6 +24,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Debug\Straitjacket.Utility.VersionChecker.xml</DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,10 +35,15 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Release\Straitjacket.Utility.VersionChecker.xml</DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp_publicized">
       <HintPath>..\..\..\..\QModManager\Dependencies\Assembly-CSharp_publicized.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Subnautica\BepInEx\core\BepInEx.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">
@@ -86,6 +93,7 @@
     <None Include=".editorconfig" />
     <None Include="mod.json" />
   </ItemGroup>
+  <Import Project="..\BepInEx.Subnautica.Logger\Logger\Logger.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if exist "E:\Toadbomb\Documents\PowerShell Scripts\Subnautica Modding\post-build.ps1" powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File "E:\Toadbomb\Documents\PowerShell Scripts\Subnautica Modding\post-build.ps1" -ProjectName $(SolutionName) -ConfigurationName $(ConfigurationName) -ProjectDir $(ProjectDir) -TargetDir $(TargetDir) -TargetPath $(TargetPath) -CopyXMLs -ApplicationPath "C:\Program Files (x86)\Steam\steamapps\common\Subnautica" -SteamGameID 264710</PostBuildEvent>

@@ -1,12 +1,13 @@
-﻿using System;
+﻿using QModManager.API;
+using SMLHelper.V2.Handlers;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using QModManager.API;
-using SMLHelper.V2.Handlers;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Utility
 {
@@ -57,17 +58,17 @@ namespace Straitjacket.Utility
             string prefix;
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
             {
-                prefix = "[VersionChecker]";
+                prefix = string.Empty;
             }
             else
             {
-                prefix = $"[VersionChecker] [{displayName}]";
+                prefix = $"[{displayName}] ";
             }
 
             if (currentVersion == null)
             {
 
-                Console.WriteLine($"{prefix} There was an error retrieving the current version.");
+                Logger.LogError($"{prefix}There was an error retrieving the current version.");
                 return;
             }
 
@@ -88,7 +89,7 @@ namespace Straitjacket.Utility
                     return false;
                 }
             };
-            Console.WriteLine($"{prefix} Currently running v{currentVersion}.");
+            Logger.LogInfo($"{prefix}Currently running v{currentVersion}.");
         }
 
         /// <summary>
@@ -130,16 +131,16 @@ namespace Straitjacket.Utility
             string prefix;
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
             {
-                prefix = "[VersionChecker]";
+                prefix = string.Empty;
             }
             else
             {
-                prefix = $"[VersionChecker] [{displayName}]";
+                prefix = $"[{displayName}] ";
             }
 
             if (currentVersion == null)
             {
-                Console.WriteLine($"{prefix} There was an error retrieving the current version.");
+                Logger.LogError($"{prefix}There was an error retrieving the current version.");
                 return;
             }
 
@@ -160,7 +161,7 @@ namespace Straitjacket.Utility
                     return false;
                 }
             };
-            Console.WriteLine($"{prefix} Currently running v{currentVersion}.");
+            Logger.LogInfo($"{prefix}Currently running v{currentVersion}.");
         }
 
         internal static void Check(string URL, IQMod qMod)
@@ -179,16 +180,16 @@ namespace Straitjacket.Utility
             string prefix;
             if (qMod.LoadedAssembly == Assembly.GetAssembly(typeof(VersionChecker)))
             {
-                prefix = "[VersionChecker]";
+                prefix = string.Empty;
             }
             else
             {
-                prefix = $"[VersionChecker] [{qMod.DisplayName}]";
+                prefix = $"[{qMod.DisplayName}] ";
             }
 
             if (qMod.ParsedVersion == null)
             {
-                Console.WriteLine($"{prefix} There was an error retrieving the current version.");
+                Logger.LogError($"{prefix}There was an error retrieving the current version.");
                 return;
             }
 
@@ -209,7 +210,7 @@ namespace Straitjacket.Utility
                     return false;
                 }
             };
-            Console.WriteLine($"{prefix} Currently running v{qMod.ParsedVersion}.");
+            Logger.LogInfo($"{prefix}Currently running v{qMod.ParsedVersion}.");
         }
 
         internal static Version GetLatestVersion(string URL)
