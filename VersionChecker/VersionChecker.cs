@@ -44,7 +44,6 @@ namespace Straitjacket.Utility
         {
             Singleton();
 
-
             var assembly = Assembly.GetCallingAssembly();
             var qMod = QModServices.Main.FindModByAssembly(assembly);
             if (qMod == null)
@@ -396,13 +395,13 @@ namespace Straitjacket.Utility
                 case CheckFrequency.Never:
                     return false;
                 case CheckFrequency.Hourly:
-                    return DateTime.UtcNow > Config.LastChecked.AddHours(1);
+                    return DateTime.UtcNow >= Config.LastChecked.AddHours(1);
                 case CheckFrequency.Daily:
-                    return DateTime.UtcNow > Config.LastChecked.AddDays(1);
+                    return DateTime.UtcNow >= Config.LastChecked.AddDays(1);
                 case CheckFrequency.Weekly:
-                    return DateTime.UtcNow > Config.LastChecked.AddDays(7);
+                    return DateTime.UtcNow >= Config.LastChecked.AddDays(7);
                 case CheckFrequency.Monthly:
-                    return DateTime.UtcNow > Config.LastChecked.AddMonths(1);
+                    return DateTime.UtcNow >= Config.LastChecked.AddMonths(1);
             }
         }
     }
