@@ -1,8 +1,8 @@
-﻿using BepInEx.Logging;
-using Oculus.Newtonsoft.Json;
+﻿using Oculus.Newtonsoft.Json;
 using QModManager.API;
 using QModManager.API.ModLoading;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Logger = BepInEx.Subnautica.Logger;
@@ -14,7 +14,7 @@ namespace Straitjacket.Utility
     /// </summary>
     [Obsolete("Should not be used!", true)]
     [QModCore]
-    public class Patcher
+    public class Main
     {
         /// <summary>
         /// QModManager entry point
@@ -23,9 +23,12 @@ namespace Straitjacket.Utility
         [QModPrePatch("468FFFD5F36B7F5D4423044475F0B5F4")]
         public static void Patch()
         {
+            Logger.LogInfo("Initialising...");
+            var stopwatch = Stopwatch.StartNew();
+
             VersionChecker.Check(
                 "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod.json",
-                QModServices.Main.FindModById("VersionChecker")
+                QModServices.Main.GetMyMod()
             );
 
             var QModsPath = Path.Combine(Environment.CurrentDirectory, "QMods");
@@ -46,6 +49,9 @@ namespace Straitjacket.Utility
                     Logger.LogError(ex.Message);
                 }
             }
+
+            stopwatch.Stop();
+            Logger.LogInfo($"Initialised in {stopwatch.ElapsedMilliseconds}ms.");
         }
     }
 }

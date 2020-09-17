@@ -1,29 +1,15 @@
 ﻿using SMLHelper.V2.Json;
-using Oculus.Newtonsoft.Json;
-using Oculus.Newtonsoft.Json.Converters;
-using UnityEngine;
+using SMLHelper.V2.Options.Attributes;
 using System;
 
 namespace Straitjacket.Utility
 {
-    public partial class VersionChecker : MonoBehaviour
+    [Menu("VersionChecker", LoadOn = MenuAttribute.LoadEvents.MenuOpened | MenuAttribute.LoadEvents.MenuRegistered)]
+    internal class Config : ConfigFile
     {
-        internal enum CheckFrequency
-        {
-            Startup,
-            Hourly,
-            Daily,
-            Weekly,
-            Monthly,
-            Never
-        }
+        [Choice("Frequency of checks")]
+        public VersionChecker.CheckFrequency Frequency = VersionChecker.CheckFrequency.Hourly;
 
-        internal class Config : ConfigFile
-        {
-            [JsonConverter(typeof(StringEnumConverter))]
-            public CheckFrequency Frequency { get; set; } = CheckFrequency.Hourly;
-
-            public DateTime LastChecked { get; set; }
-        }
+        public DateTime LastChecked { get; set; }
     }
 }

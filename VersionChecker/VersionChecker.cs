@@ -16,8 +16,18 @@ namespace Straitjacket.Utility
     /// </summary>
     public partial class VersionChecker : MonoBehaviour
     {
+        internal enum CheckFrequency
+        {
+            Startup,
+            Hourly,
+            Daily,
+            Weekly,
+            Monthly,
+            Never
+        }
+
         private static VersionChecker main = null;
-        internal static VersionChecker Singleton() => main = main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
+        internal static VersionChecker Singleton() => main ??= new GameObject("VersionChecker").AddComponent<VersionChecker>();
 
         private static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
 
@@ -266,7 +276,7 @@ namespace Straitjacket.Utility
             }
         }
 
-        internal static Config config = new Config();
+        internal static Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
         private void Awake()
         {
             if (main != null)
@@ -276,8 +286,6 @@ namespace Straitjacket.Utility
             else
             {
                 DontDestroyOnLoad(this);
-                config.Load();
-                OptionsPanelHandler.RegisterModOptions(new Options());
                 SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
                 SceneManager.sceneLoaded += SceneManager_sceneLoaded;
             }
@@ -338,8 +346,8 @@ namespace Straitjacket.Utility
             {
                 versionRecord.UpdateLatestVersion();
             }
-            config.LastChecked = DateTime.UtcNow;
-            config.Save();
+            Config.LastChecked = DateTime.UtcNow;
+            Config.Save();
 
             yield return new WaitForSecondsRealtime(1);
             yield return new WaitForFixedUpdate();
@@ -375,26 +383,26 @@ namespace Straitjacket.Utility
         private bool startupChecked = false;
         private bool ShouldCheckVersions()
         {
-            if (config.Frequency == CheckFrequency.Startup)
+            if (Config.Frequency == CheckFrequency.Startup)
             {
                 return startupChecked ? false : startupChecked = true;
             }
 
             startupChecked = true;
 
-            switch (config.Frequency)
+            switch (Config.Frequency)
             {
                 default:
                 case CheckFrequency.Never:
                     return false;
                 case CheckFrequency.Hourly:
-                    return DateTime.UtcNow > config.LastChecked.AddHours(1);
+                    return DateTime.UtcNow > Config.LastChecked.AddHours(1);
                 case CheckFrequency.Daily:
-                    return DateTime.UtcNow > config.LastChecked.AddDays(1);
+                    return DateTime.UtcNow > Config.LastChecked.AddDays(1);
                 case CheckFrequency.Weekly:
-                    return DateTime.UtcNow > config.LastChecked.AddDays(7);
+                    return DateTime.UtcNow > Config.LastChecked.AddDays(7);
                 case CheckFrequency.Monthly:
-                    return DateTime.UtcNow > config.LastChecked.AddMonths(1);
+                    return DateTime.UtcNow > Config.LastChecked.AddMonths(1);
             }
         }
     }
