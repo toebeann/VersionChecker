@@ -1,24 +1,34 @@
-﻿using System;
+﻿using QModManager.API;
+using SMLHelper.V2.Handlers;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using QModManager.API;
-using SMLHelper.V2.Handlers;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Utility
 {
     /// <summary>
     /// An API for checking the client is running the latest version of a mod, informing the user if it is not.
     /// </summary>
-    public partial class VersionChecker : MonoBehaviour
+    public class VersionChecker : MonoBehaviourSingleton<VersionChecker>
     {
-        private static VersionChecker main = null;
-        internal static VersionChecker Singleton() => main = main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
+        internal enum CheckFrequency
+        {
+            Startup,
+            Hourly,
+            Daily,
+            Weekly,
+            Monthly,
+            Never
+        }
 
-        private static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
+        internal static VersionChecker GetSingleton() => Main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
+
+        internal static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
 
         /// <summary>
         /// Entry point for the VersionChecker API when the latest version number is stored in plain text at a given URL as an Assembly Version.
@@ -28,11 +38,10 @@ namespace Straitjacket.Utility
         /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
         /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
         /// compiled assembly.</param>
-        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.")]
+        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.", true)]
         public static void Check(string URL, Version currentVersion = null, string displayName = null)
         {
-            Singleton();
-
+            GetSingleton();
 
             var assembly = Assembly.GetCallingAssembly();
             var qMod = QModServices.Main.FindModByAssembly(assembly);
@@ -57,17 +66,17 @@ namespace Straitjacket.Utility
             string prefix;
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
             {
-                prefix = "[VersionChecker]";
+                prefix = string.Empty;
             }
             else
             {
-                prefix = $"[VersionChecker] [{displayName}]";
+                prefix = $"[{displayName}] ";
             }
 
             if (currentVersion == null)
             {
 
-                Console.WriteLine($"{prefix} There was an error retrieving the current version.");
+                Logger.LogError($"{prefix}There was an error retrieving the current version.");
                 return;
             }
 
@@ -88,7 +97,7 @@ namespace Straitjacket.Utility
                     return false;
                 }
             };
-            Console.WriteLine($"{prefix} Currently running v{currentVersion}.");
+            Logger.LogInfo($"{prefix}Currently running v{currentVersion}.");
         }
 
         /// <summary>
@@ -101,11 +110,11 @@ namespace Straitjacket.Utility
         /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
         /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
         /// compiled assembly.</param>
-        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.")]
+        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.", true)]
         public static void Check<TJsonObject>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
             where TJsonObject : class
         {
-            Singleton();
+            GetSingleton();
 
             var assembly = Assembly.GetCallingAssembly();
             var qMod = QModServices.Main.FindModByAssembly(assembly);
@@ -130,16 +139,16 @@ namespace Straitjacket.Utility
             string prefix;
             if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
             {
-                prefix = "[VersionChecker]";
+                prefix = string.Empty;
             }
             else
             {
-                prefix = $"[VersionChecker] [{displayName}]";
+                prefix = $"[{displayName}] ";
             }
 
             if (currentVersion == null)
             {
-                Console.WriteLine($"{prefix} There was an error retrieving the current version.");
+                Logger.LogError($"{prefix}There was an error retrieving the current version.");
                 return;
             }
 
@@ -160,12 +169,12 @@ namespace Straitjacket.Utility
                     return false;
                 }
             };
-            Console.WriteLine($"{prefix} Currently running v{currentVersion}.");
+            Logger.LogInfo($"{prefix}Currently running v{currentVersion}.");
         }
 
         internal static void Check(string URL, IQMod qMod)
         {
-            Singleton();
+            GetSingleton();
 
             if (qMod == null)
             {
@@ -179,16 +188,16 @@ namespace Straitjacket.Utility
             string prefix;
             if (qMod.LoadedAssembly == Assembly.GetAssembly(typeof(VersionChecker)))
             {
-                prefix = "[VersionChecker]";
+                prefix = string.Empty;
             }
             else
             {
-                prefix = $"[VersionChecker] [{qMod.DisplayName}]";
+                prefix = $"[{qMod.DisplayName}] ";
             }
 
             if (qMod.ParsedVersion == null)
             {
-                Console.WriteLine($"{prefix} There was an error retrieving the current version.");
+                Logger.LogError($"{prefix}There was an error retrieving the current version.");
                 return;
             }
 
@@ -201,7 +210,12 @@ namespace Straitjacket.Utility
                 CurrentVersion = qMod.ParsedVersion,
                 Update = () =>
                 {
-                    if (TryGetLatestVersion<ModJson>(URL, typeof(ModJson).GetProperty("Version"), out var version))
+                    if (TryGetLatestVersion<ModJson>(URL, typeof(ModJson).GetProperty("Version"), out var version) ||
+                        (qMod == QModServices.Main.GetMyMod() &&
+                        TryGetLatestVersion<ModJson>(
+                            "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod.json",
+                            typeof(ModJson).GetProperty("Version"),
+                            out version)))
                     {
                         CheckedVersions[qMod].LatestVersion = version;
                         return true;
@@ -209,7 +223,7 @@ namespace Straitjacket.Utility
                     return false;
                 }
             };
-            Console.WriteLine($"{prefix} Currently running v{qMod.ParsedVersion}.");
+            Logger.LogInfo($"{prefix}Currently running v{qMod.ParsedVersion}.");
         }
 
         internal static Version GetLatestVersion(string URL)
@@ -265,41 +279,29 @@ namespace Straitjacket.Utility
             }
         }
 
-        internal static Config config = new Config();
-        private void Awake()
+        internal static Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
+
+        /// <summary>
+        /// Called from Awake for the singleton instance of VersionChecker
+        /// </summary>
+        protected override void SingletonAwake()
         {
-            if (main != null)
-            {
-                DestroyImmediate(this);
-            }
-            else
-            {
-                DontDestroyOnLoad(this);
-                config.Load();
-                OptionsPanelHandler.RegisterModOptions(new Options());
-                SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
-                SceneManager.sceneLoaded += SceneManager_sceneLoaded;
-            }
+            DontDestroyOnLoad(this);
+            SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
+            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
         }
 
-        private void OnDestroy()
-        {
-            if (main == this)
-            {
-                Singleton().StopAllCoroutines();
-                main = null;
-            }
-        }
+        private void OnDestroy() => StopAllCoroutines();
 
         private bool IsRunning = false;
         private static void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (Singleton() != null && !Singleton().IsRunning)
+            if (Main != null && !Main.IsRunning)
             {
                 if (scene.name == "StartScreen")
                 {
-                    Singleton().IsRunning = true;
-                    Singleton().StartCoroutine(Singleton().PrintOutdatedVersions());
+                    Main.IsRunning = true;
+                    Main.StartCoroutine(Main.PrintOutdatedVersions());
                     SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
                 }
             }
@@ -337,8 +339,8 @@ namespace Straitjacket.Utility
             {
                 versionRecord.UpdateLatestVersion();
             }
-            config.LastChecked = DateTime.UtcNow;
-            config.Save();
+            Config.LastChecked = DateTime.UtcNow;
+            Config.Save();
 
             yield return new WaitForSecondsRealtime(1);
             yield return new WaitForFixedUpdate();
@@ -374,26 +376,26 @@ namespace Straitjacket.Utility
         private bool startupChecked = false;
         private bool ShouldCheckVersions()
         {
-            if (config.Frequency == CheckFrequency.Startup)
+            if (Config.Frequency == CheckFrequency.Startup)
             {
                 return startupChecked ? false : startupChecked = true;
             }
 
             startupChecked = true;
 
-            switch (config.Frequency)
+            switch (Config.Frequency)
             {
                 default:
                 case CheckFrequency.Never:
                     return false;
                 case CheckFrequency.Hourly:
-                    return DateTime.UtcNow > config.LastChecked.AddHours(1);
+                    return DateTime.UtcNow >= Config.LastChecked.AddHours(1);
                 case CheckFrequency.Daily:
-                    return DateTime.UtcNow > config.LastChecked.AddDays(1);
+                    return DateTime.UtcNow >= Config.LastChecked.AddDays(1);
                 case CheckFrequency.Weekly:
-                    return DateTime.UtcNow > config.LastChecked.AddDays(7);
+                    return DateTime.UtcNow >= Config.LastChecked.AddDays(7);
                 case CheckFrequency.Monthly:
-                    return DateTime.UtcNow > config.LastChecked.AddMonths(1);
+                    return DateTime.UtcNow >= Config.LastChecked.AddMonths(1);
             }
         }
     }

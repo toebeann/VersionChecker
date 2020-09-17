@@ -5,16 +5,26 @@ VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Straitjacket.Utility", "VersionChecker\Straitjacket.Utility.csproj", "{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "BepInEx.Subnautica.Logger", "BepInEx.Subnautica.Logger\Logger\BepInEx.Subnautica.Logger.shproj", "{32F6ED8C-0F9A-409D-A404-EE068789C72F}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MonoBehaviourSingleton", "UnityEngine.MonoBehaviourSingleton\MonoBehaviourSingleton\MonoBehaviourSingleton.shproj", "{2E58F3DE-C236-4BA7-AEC1-BD1A01C5371A}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		UnityEngine.MonoBehaviourSingleton\MonoBehaviourSingleton\MonoBehaviourSingleton.projitems*{2e58f3de-c236-4ba7-aec1-bd1a01c5371a}*SharedItemsImports = 13
+		BepInEx.Subnautica.Logger\Logger\Logger.projitems*{32f6ed8c-0f9a-409d-a404-ee068789c72f}*SharedItemsImports = 13
+		BepInEx.Subnautica.Logger\Logger\Logger.projitems*{44f05b7e-e21a-49b1-9523-3ec9e22f9e6d}*SharedItemsImports = 4
+		UnityEngine.MonoBehaviourSingleton\MonoBehaviourSingleton\MonoBehaviourSingleton.projitems*{44f05b7e-e21a-49b1-9523-3ec9e22f9e6d}*SharedItemsImports = 4
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		BELOWZERO|Any CPU = BELOWZERO|Any CPU
+		SUBNAUTICA|Any CPU = SUBNAUTICA|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.BELOWZERO|Any CPU.ActiveCfg = BELOWZERO|Any CPU
+		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.BELOWZERO|Any CPU.Build.0 = BELOWZERO|Any CPU
+		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.SUBNAUTICA|Any CPU.ActiveCfg = SUBNAUTICA|Any CPU
+		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.SUBNAUTICA|Any CPU.Build.0 = SUBNAUTICA|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

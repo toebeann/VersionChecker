@@ -1,9 +1,15 @@
-﻿using System;
-using System.IO;
-using System.Linq;
+﻿#if SUBNAUTICA
 using Oculus.Newtonsoft.Json;
+#elif BELOWZERO
+using Newtonsoft.Json;
+#endif
 using QModManager.API;
 using QModManager.API.ModLoading;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Utility
 {
@@ -12,7 +18,7 @@ namespace Straitjacket.Utility
     /// </summary>
     [Obsolete("Should not be used!", true)]
     [QModCore]
-    public class Patcher
+    public class Main
     {
         /// <summary>
         /// QModManager entry point
@@ -21,10 +27,15 @@ namespace Straitjacket.Utility
         [QModPrePatch("468FFFD5F36B7F5D4423044475F0B5F4")]
         public static void Patch()
         {
-            VersionChecker.Check(
-                "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod.json",
-                QModServices.Main.FindModById("VersionChecker")
-            );
+            Logger.LogInfo("Initialising...");
+            var stopwatch = Stopwatch.StartNew();
+
+#if SUBNAUTICA
+            var url = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_SUBNAUTICA.json";
+#elif BELOWZERO
+            var url = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_BELOWZERO.json";
+#endif
+            VersionChecker.Check(url, QModServices.Main.GetMyMod());
 
             var QModsPath = Path.Combine(Environment.CurrentDirectory, "QMods");
             foreach (var modJsonPath in Directory.GetDirectories(QModsPath, "*", SearchOption.TopDirectoryOnly)
@@ -40,10 +51,13 @@ namespace Straitjacket.Utility
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[VersionChecker] Encountered an error while attempting to parse JSON: {modJsonPath}");
-                    Console.WriteLine(ex.Message);
+                    Logger.LogError($"Encountered an error while attempting to parse JSON: {modJsonPath}");
+                    Logger.LogError(ex.Message);
                 }
             }
+
+            stopwatch.Stop();
+            Logger.LogInfo($"Initialised in {stopwatch.ElapsedMilliseconds}ms.");
         }
     }
 }
