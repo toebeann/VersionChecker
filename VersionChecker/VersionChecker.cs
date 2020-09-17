@@ -29,7 +29,7 @@ namespace Straitjacket.Utility
         private static VersionChecker main = null;
         internal static VersionChecker Singleton() => main ??= new GameObject("VersionChecker").AddComponent<VersionChecker>();
 
-        private static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
+        internal static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
 
         /// <summary>
         /// Entry point for the VersionChecker API when the latest version number is stored in plain text at a given URL as an Assembly Version.
@@ -39,7 +39,7 @@ namespace Straitjacket.Utility
         /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
         /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
         /// compiled assembly.</param>
-        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.")]
+        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.", true)]
         public static void Check(string URL, Version currentVersion = null, string displayName = null)
         {
             Singleton();
@@ -111,7 +111,7 @@ namespace Straitjacket.Utility
         /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
         /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
         /// compiled assembly.</param>
-        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.")]
+        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.", true)]
         public static void Check<TJsonObject>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
             where TJsonObject : class
         {
@@ -211,7 +211,12 @@ namespace Straitjacket.Utility
                 CurrentVersion = qMod.ParsedVersion,
                 Update = () =>
                 {
-                    if (TryGetLatestVersion<ModJson>(URL, typeof(ModJson).GetProperty("Version"), out var version))
+                    if (TryGetLatestVersion<ModJson>(URL, typeof(ModJson).GetProperty("Version"), out var version) ||
+                        (qMod == QModServices.Main.GetMyMod() &&
+                        TryGetLatestVersion<ModJson>(
+                            "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod.json",
+                            typeof(ModJson).GetProperty("Version"),
+                            out version)))
                     {
                         CheckedVersions[qMod].LatestVersion = version;
                         return true;

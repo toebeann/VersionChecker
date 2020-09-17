@@ -30,10 +30,12 @@ namespace Straitjacket.Utility
             Logger.LogInfo("Initialising...");
             var stopwatch = Stopwatch.StartNew();
 
-            VersionChecker.Check(
-                "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod.json",
-                QModServices.Main.GetMyMod()
-            );
+#if SUBNAUTICA
+            var url = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_SUBNAUTICA.json";
+#elif BELOWZERO
+            var url = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_BELOWZERO.json";
+#endif
+            VersionChecker.Check(url, QModServices.Main.GetMyMod());
 
             var QModsPath = Path.Combine(Environment.CurrentDirectory, "QMods");
             foreach (var modJsonPath in Directory.GetDirectories(QModsPath, "*", SearchOption.TopDirectoryOnly)
