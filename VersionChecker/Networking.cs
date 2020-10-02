@@ -4,17 +4,18 @@ using Oculus.Newtonsoft.Json;
 using Newtonsoft.Json;
 #endif
 using System.Net;
+using System.Threading.Tasks;
 
 namespace Straitjacket.Utility
 {
     internal class Networking
     {
         private const string GOOGLE_204_URL = "http://google.com/generate_204";
-        internal static bool CheckConnection(string URL = GOOGLE_204_URL)
+        internal static async Task<bool> CheckConnectionAsync(string URL = GOOGLE_204_URL)
         {
             if (URL != GOOGLE_204_URL)
             {
-                var preliminary = CheckConnection(GOOGLE_204_URL);
+                var preliminary = await CheckConnectionAsync(GOOGLE_204_URL);
                 if (preliminary)
                 {
                     return preliminary;
@@ -24,7 +25,7 @@ namespace Straitjacket.Utility
             try
             {
                 using (var client = new WebClient())
-                using (client.OpenRead(URL))
+                using (var stream = await client.OpenReadTaskAsync(URL))
                 {
                     return true;
                 }
@@ -35,42 +36,15 @@ namespace Straitjacket.Utility
             }
         }
 
-        internal static string ReadAllText(string URL)
+        internal static async Task<string> ReadAllTextAsync(string URL)
         {
             using (var client = new WebClient())
             {
-                return client.DownloadString(URL);
-            }
-        }
-        internal static bool TryReadAllText(string URL, out string text)
-        {
-            try
-            {
-                text = ReadAllText(URL);
-                return true;
-            }
-            catch
-            {
-                text = null;
-                return false;
+                return await client.DownloadStringTaskAsync(URL);
             }
         }
 
-        internal static TJsonObject ReadJSON<TJsonObject>(string URL) where TJsonObject : class
-            => JsonConvert.DeserializeObject<TJsonObject>(ReadAllText(URL));
-
-        internal static bool TryReadJSON<TJsonObject>(string URL, out TJsonObject JsonObject) where TJsonObject : class
-        {
-            try
-            {
-                JsonObject = ReadJSON<TJsonObject>(URL);
-                return true;
-            }
-            catch
-            {
-                JsonObject = null;
-                return false;
-            }
-        }
+        internal static async Task<TJsonObject> ReadJSONAsync<TJsonObject>(string URL) where TJsonObject : class
+            => JsonConvert.DeserializeObject<TJsonObject>(await ReadAllTextAsync(URL));
     }
 }

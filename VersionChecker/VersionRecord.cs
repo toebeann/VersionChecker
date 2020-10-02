@@ -1,5 +1,13 @@
-﻿using System;
+﻿#if SUBNAUTICA
+using Oculus.Newtonsoft.Json;
+#elif BELOWZERO
+using Newtonsoft.Json;
+#endif
+using System;
+using System.Net;
 using System.Reflection;
+using System.Threading.Tasks;
+using UnityEngine;
 using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Utility
@@ -10,10 +18,12 @@ namespace Straitjacket.Utility
 
         public Assembly Assembly;
         public string DisplayName;
-        public string Colour;
+        public Color Colour;
         public string URL;
         public Version CurrentVersion;
         public Version LatestVersion;
+        public Func<Task> UpdateAsync;
+
         public VersionState State
         {
             get
@@ -37,34 +47,53 @@ namespace Straitjacket.Utility
             }
         }
 
-        public void UpdateLatestVersion()
+        public async Task UpdateLatestVersionAsync()
         {
-            if (Update != null)
+            if (UpdateAsync != null)
             {
-                string prefix;
-                if (Assembly == Assembly.GetAssembly(typeof(VersionChecker)))
-                {
-                    prefix = string.Empty;
-                }
-                else
-                {
-                    prefix = $"[{DisplayName}] ";
-                }
+                string prefix = Assembly == Assembly.GetAssembly(typeof(VersionChecker))
+                    ? string.Empty
+                    : $"[{DisplayName}] ";
 
-                if (!Networking.CheckConnection(URL))
+                if (!await Networking.CheckConnectionAsync(URL))
                 {
                     Logger.LogWarning($"{prefix}Unable to check for updates: Connection unavailable.");
                     return;
                 }
 
-                if (!Update())
+                try
                 {
-                    Logger.LogError($"{prefix}There was an error retrieving the latest version.");
-                    return;
+                    await UpdateAsync();
+                }
+                catch (WebException e)
+                {
+                    Logger.LogError($"{prefix}There was an error retrieving the latest version: " +
+                        $"Could not connect to address {URL}");
+                    Logger.LogError(e.Message);
+                }
+                catch (JsonReaderException e)
+                {
+                    Logger.LogError($"{prefix}There was an error retrieving the latest version: " +
+                        $"Invalid JSON found at address {URL}");
+                    Logger.LogError(e.Message);
+                }
+                catch (JsonSerializationException e)
+                {
+                    Logger.LogError($"{prefix}There was an error retrieving the latest version:");
+                    Logger.LogError(e.Message);
+                }
+                catch (InvalidOperationException e)
+                {
+                    Logger.LogError($"{prefix}There was an error retrieving the latest version:");
+                    Logger.LogError(e.Message);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError($"{prefix}There was an unhandled error retrieving the latest version.");
+                    Logger.LogError(e);
                 }
             }
         }
-        public Func<bool> Update;
 
         public string Message(bool splitLines = false)
         {
@@ -74,9 +103,12 @@ namespace Straitjacket.Utility
                     return $"Currently running v{CurrentVersion}." +
                     (splitLines ? Environment.NewLine : " ") +
                     $"The latest release version is v{LatestVersion}. " +
-                    $"We are ahead.";
+                    "We are ahead.";
                 case VersionState.Current:
-                    return $"Currently running v{CurrentVersion}. Up to date.";
+                    return $"Currently running v{CurrentVersion}." +
+                        (splitLines ? Environment.NewLine : " ") +
+                        $"The latest release version is v{LatestVersion}. " +
+                        "Up to date.";
                 case VersionState.Outdated:
                     return $"A new version has been released: v{LatestVersion}." +
                     (splitLines ? Environment.NewLine : " ") +
