@@ -65,15 +65,9 @@ namespace Straitjacket.Utility
                 displayName = qMod.DisplayName;
             }
 
-            string prefix;
-            if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
-            {
-                prefix = string.Empty;
-            }
-            else
-            {
-                prefix = $"[{displayName}] ";
-            }
+            string prefix = assembly == Assembly.GetAssembly(typeof(VersionChecker))
+                ? string.Empty
+                : $"[{displayName}] ";
 
             if (currentVersion == null)
             {
@@ -134,15 +128,9 @@ namespace Straitjacket.Utility
                 displayName = qMod.DisplayName;
             }
 
-            string prefix;
-            if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
-            {
-                prefix = string.Empty;
-            }
-            else
-            {
-                prefix = $"[{displayName}] ";
-            }
+            string prefix = assembly == Assembly.GetAssembly(typeof(VersionChecker))
+                ? string.Empty
+                : $"[{displayName}] ";
 
             if (currentVersion == null)
             {
@@ -320,15 +308,9 @@ namespace Straitjacket.Utility
 
         private async Task PrintVersionInfoAsync(VersionRecord versionRecord)
         {
-            string prefix;
-            if (versionRecord.Assembly == Assembly.GetAssembly(typeof(VersionChecker)))
-            {
-                prefix = string.Empty;
-            }
-            else
-            {
-                prefix = $"[{versionRecord.DisplayName}] ";
-            }
+            string prefix = versionRecord.Assembly == Assembly.GetAssembly(typeof(VersionChecker))
+                    ? string.Empty
+                    : $"[{versionRecord.DisplayName}] ";
 
             switch (versionRecord.State)
             {

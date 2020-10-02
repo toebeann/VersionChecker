@@ -51,15 +51,9 @@ namespace Straitjacket.Utility
         {
             if (UpdateAsync != null)
             {
-                string prefix;
-                if (Assembly == Assembly.GetAssembly(typeof(VersionChecker)))
-                {
-                    prefix = string.Empty;
-                }
-                else
-                {
-                    prefix = $"[{DisplayName}] ";
-                }
+                string prefix = Assembly == Assembly.GetAssembly(typeof(VersionChecker))
+                    ? string.Empty
+                    : $"[{DisplayName}] ";
 
                 if (!await Networking.CheckConnectionAsync(URL))
                 {
