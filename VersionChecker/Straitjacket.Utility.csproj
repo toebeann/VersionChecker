@@ -87,7 +87,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
-    <None Include="mod.json" />
     <None Include="mod_BELOWZERO.json" />
     <None Include="mod_SUBNAUTICA.json" />
   </ItemGroup>
