@@ -1,10 +1,11 @@
 ﻿using QModManager.API;
+using QModManager.Utility;
 using SMLHelper.V2.Handlers;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Logger = BepInEx.Subnautica.Logger;
@@ -29,6 +30,7 @@ namespace Straitjacket.Utility
         internal static VersionChecker GetSingleton() => Main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
 
         internal static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
+        internal static IVersionParser VersionParser { get; } = new VersionParser();
 
         /// <summary>
         /// Entry point for the VersionChecker API when the latest version number is stored in plain text at a given URL as an Assembly Version.
@@ -63,15 +65,9 @@ namespace Straitjacket.Utility
                 displayName = qMod.DisplayName;
             }
 
-            string prefix;
-            if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
-            {
-                prefix = string.Empty;
-            }
-            else
-            {
-                prefix = $"[{displayName}] ";
-            }
+            string prefix = assembly == Assembly.GetAssembly(typeof(VersionChecker))
+                ? string.Empty
+                : $"[{displayName}] ";
 
             if (currentVersion == null)
             {
@@ -87,14 +83,10 @@ namespace Straitjacket.Utility
                 Colour = GetColour(),
                 URL = URL,
                 CurrentVersion = currentVersion,
-                Update = () =>
+                UpdateAsync = async () =>
                 {
-                    if (TryGetLatestVersion(URL, out var latestVersion))
-                    {
-                        CheckedVersions[qMod].LatestVersion = latestVersion;
-                        return true;
-                    }
-                    return false;
+                    Version version = await GetLatestVersionAsync(URL);
+                    CheckedVersions[qMod].LatestVersion = version;
                 }
             };
             Logger.LogInfo($"{prefix}Currently running v{currentVersion}.");
@@ -136,15 +128,9 @@ namespace Straitjacket.Utility
                 displayName = qMod.DisplayName;
             }
 
-            string prefix;
-            if (assembly == Assembly.GetAssembly(typeof(VersionChecker)))
-            {
-                prefix = string.Empty;
-            }
-            else
-            {
-                prefix = $"[{displayName}] ";
-            }
+            string prefix = assembly == Assembly.GetAssembly(typeof(VersionChecker))
+                ? string.Empty
+                : $"[{displayName}] ";
 
             if (currentVersion == null)
             {
@@ -159,14 +145,14 @@ namespace Straitjacket.Utility
                 Colour = GetColour(),
                 URL = URL,
                 CurrentVersion = currentVersion,
-                Update = () =>
+                UpdateAsync = async () =>
                 {
-                    if (TryGetLatestVersion<TJsonObject>(URL, typeof(TJsonObject).GetProperty(versionProperty), out var version))
-                    {
-                        CheckedVersions[qMod].LatestVersion = version;
-                        return true;
-                    }
-                    return false;
+                    PropertyInfo versionPropertyInfo = typeof(ModJson).GetProperty(versionProperty);
+                    if (versionPropertyInfo == null)
+                        throw new InvalidOperationException($"Property {versionProperty} not found in type {typeof(TJsonObject)}");
+
+                    Version version = await GetLatestVersionAsync<TJsonObject>(URL, versionPropertyInfo);
+                    CheckedVersions[qMod].LatestVersion = version;
                 }
             };
             Logger.LogInfo($"{prefix}Currently running v{currentVersion}.");
@@ -177,29 +163,22 @@ namespace Straitjacket.Utility
             GetSingleton();
 
             if (qMod == null)
-            {
-                throw new NullReferenceException();
-            }
-            if (CheckedVersions.ContainsKey(qMod))
-            {
-                return;
-            }
+                throw new ArgumentNullException("qMod");
 
-            string prefix;
-            if (qMod.LoadedAssembly == Assembly.GetAssembly(typeof(VersionChecker)))
-            {
-                prefix = string.Empty;
-            }
-            else
-            {
-                prefix = $"[{qMod.DisplayName}] ";
-            }
+            if (CheckedVersions.ContainsKey(qMod))
+                return;
+
+            string prefix = qMod.LoadedAssembly == Assembly.GetAssembly(typeof(VersionChecker))
+                ? string.Empty
+                : $"[{qMod.DisplayName}] ";
 
             if (qMod.ParsedVersion == null)
             {
-                Logger.LogError($"{prefix}There was an error retrieving the current version.");
+                Logger.LogError($"{prefix}There was an error retrieving the current version: QModManager failed to parse.");
                 return;
             }
+
+            string versionProperty = "Version";
 
             var versionRecord = CheckedVersions[qMod] = new VersionRecord
             {
@@ -208,75 +187,41 @@ namespace Straitjacket.Utility
                 Colour = GetColour(),
                 URL = URL,
                 CurrentVersion = qMod.ParsedVersion,
-                Update = () =>
+                UpdateAsync = async () =>
                 {
-                    if (TryGetLatestVersion<ModJson>(URL, typeof(ModJson).GetProperty("Version"), out var version) ||
-                        (qMod == QModServices.Main.GetMyMod() &&
-                        TryGetLatestVersion<ModJson>(
-                            "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod.json",
-                            typeof(ModJson).GetProperty("Version"),
-                            out version)))
-                    {
-                        CheckedVersions[qMod].LatestVersion = version;
-                        return true;
-                    }
-                    return false;
+                    PropertyInfo versionPropertyInfo = typeof(ModJson).GetProperty(versionProperty);
+                    if (versionPropertyInfo == null)
+                        throw new InvalidOperationException($"Property {versionProperty} not found in type {typeof(ModJson)}");
+
+                    Version version = await GetLatestVersionAsync<ModJson>(URL, versionPropertyInfo);
+                    CheckedVersions[qMod].LatestVersion = version;
                 }
             };
             Logger.LogInfo($"{prefix}Currently running v{qMod.ParsedVersion}.");
         }
 
-        internal static Version GetLatestVersion(string URL)
+        internal static async Task<Version> GetLatestVersionAsync(string URL)
         {
-            if (Networking.TryReadAllText(URL, out var text) && !string.IsNullOrWhiteSpace(text))
+            var text = await Networking.ReadAllTextAsync(URL);
+
+            if (!string.IsNullOrWhiteSpace(text))
             {
-                return new Version(text.Trim());
+                return VersionParser.GetVersion(text.Trim());
             }
 
             throw new NullReferenceException();
         }
-        internal static bool TryGetLatestVersion(string URL, out Version latestVersion)
-        {
-            try
-            {
-                latestVersion = GetLatestVersion(URL);
-                return true;
-            }
-            catch
-            {
-                latestVersion = null;
-                return false;
-            }
-        }
 
-        internal static Version GetLatestVersion<TJsonObject>(string URL, PropertyInfo versionProperty)
+        internal static async Task<Version> GetLatestVersionAsync<TJsonObject>(string URL, PropertyInfo versionPropertyInfo)
             where TJsonObject : class
         {
-            if (versionProperty.PropertyType != typeof(string))
+            if (versionPropertyInfo.PropertyType != typeof(string))
             {
                 throw new ArgumentException("A property of Type string is required.", "versionProperty");
             }
 
-            if (Networking.TryReadJSON<TJsonObject>(URL, out var JSON))
-            {
-                return new Version((string)versionProperty.GetValue(JSON, null));
-            }
-
-            throw new NullReferenceException();
-        }
-        internal static bool TryGetLatestVersion<TJsonObject>(string URL, PropertyInfo versionProperty, out Version latestVersion)
-            where TJsonObject : class
-        {
-            try
-            {
-                latestVersion = GetLatestVersion<TJsonObject>(URL, versionProperty);
-                return true;
-            }
-            catch
-            {
-                latestVersion = null;
-                return false;
-            }
+            TJsonObject JSON = await Networking.ReadJSONAsync<TJsonObject>(URL);
+            return VersionParser.GetVersion((string)versionPropertyInfo.GetValue(JSON, null));
         }
 
         internal static Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
@@ -301,19 +246,19 @@ namespace Straitjacket.Utility
                 if (scene.name == "StartScreen")
                 {
                     Main.IsRunning = true;
-                    Main.StartCoroutine(Main.PrintOutdatedVersions());
+                    Task.Run(() => Main.CheckVersionsAsyncLoop());
                     SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
                 }
             }
         }
 
-        private static readonly string[] assemblyColours = new string[]
+        private static readonly Color[] assemblyColours = new Color[]
         {
-            "aqua", "brown", "green", "lightblue", "teal",
-            "lime", "magenta", "olive", "orange", "yellow"
+            new Color(0, 1, 1), new Color(.65f, .165f, .165f), new Color(0, .5f, 0), new Color(.68f, .85f, .9f), new Color(0, .5f, .5f),
+            new Color(0, 1, 0), new Color(1, 0, 1), new Color(.5f, .5f, 0), new Color(1, .65f, 0), new Color(1, 1, 0)
         };
-        private static List<string> assignedColours = new List<string>();
-        private static string GetColour()
+        private static List<Color> assignedColours = new List<Color>();
+        private static Color GetColour()
         {
             var availableColours = assemblyColours.Except(assignedColours).Union(assignedColours.Except(assignedColours));
             if (!availableColours.Any())
@@ -332,71 +277,130 @@ namespace Straitjacket.Utility
             return colour;
         }
 
-        private IEnumerator PrintOutdatedVersions()
+        private async Task CheckVersionsAsyncLoop()
         {
-            yield return new WaitUntil(() => ShouldCheckVersions());
-            foreach (var versionRecord in CheckedVersions.Values)
+            while (true)
             {
-                versionRecord.UpdateLatestVersion();
-            }
-            Config.LastChecked = DateTime.UtcNow;
-            Config.Save();
+                Logger.LogDebug("Awaiting next check...");
+                await ShouldCheckVersionsAsync();
+                Logger.LogDebug("Time to check versions.");
 
-            yield return new WaitForSecondsRealtime(1);
-            yield return new WaitForFixedUpdate();
-            yield return new WaitWhile(() => WaitScreen.main?.isShown ?? false);
-            yield return new WaitForFixedUpdate();
+                Config.LastChecked = DateTime.UtcNow;
+                Config.Save();
 
-            List<Coroutine> coroutines = new List<Coroutine>();
-            foreach (var versionRecord in CheckedVersions.Values)
-            {
-                coroutines.Add(StartCoroutine(PrintOutdatedVersion(versionRecord)));
-            }
+                Logger.LogInfo("Initiating version checks...");
+                IEnumerable<Task> updateRecordTasks = CheckedVersions.Values.Select(x => x.UpdateLatestVersionAsync());
+                await Task.WhenAll(updateRecordTasks);
+                Logger.LogInfo("Version checks complete.");
 
-            foreach (var coroutine in coroutines)
-            {
-                yield return coroutine;
+                _ = Task.Run(() => PrintOutdatedVersionsAsync());
             }
         }
 
-        private IEnumerator PrintOutdatedVersion(VersionRecord versionRecord)
+        private async Task PrintOutdatedVersionsAsync()
         {
-            if (versionRecord.State == VersionRecord.VersionState.Outdated)
-            {
-                for (var i = 0; i < 3; i++)
-                {
-                    ErrorMessage.AddError($"[<color={versionRecord.Colour}>{versionRecord.DisplayName}</color>] " +
-                        versionRecord.Message(true));
+            await NoWaitScreenAsync();
+            await Task.Delay(1000);
 
-                    yield return new WaitForSeconds(5);
+            foreach (var versionRecord in CheckedVersions.Values)
+                _ = Task.Run(() => PrintVersionInfoAsync(versionRecord));
+        }
+
+        private async Task PrintVersionInfoAsync(VersionRecord versionRecord)
+        {
+            string prefix = versionRecord.Assembly == Assembly.GetAssembly(typeof(VersionChecker))
+                    ? string.Empty
+                    : $"[{versionRecord.DisplayName}] ";
+
+            switch (versionRecord.State)
+            {
+                case VersionRecord.VersionState.Outdated:
+                    Logger.LogWarning($"{prefix}{versionRecord.Message(false)}");
+
+                    for (var i = 0; i < 3; i++)
+                    {
+                        messages.Add($"[<color=#{ColorUtility.ToHtmlStringRGB(versionRecord.Colour)}>" +
+                            $"{versionRecord.DisplayName}</color>] {versionRecord.Message(true)}");
+
+                        if (i < 2)
+                            await Task.WhenAll(Task.Delay(5000), NoWaitScreenAsync());
+                    }
+                    break;
+                case VersionRecord.VersionState.Unknown:
+                    Logger.LogWarning($"{prefix}{versionRecord.Message(false)}");
+                    break;
+                case VersionRecord.VersionState.Ahead:
+                case VersionRecord.VersionState.Current:
+                default:
+                    Logger.LogMessage($"{prefix}{versionRecord.Message(false)}");
+                    break;
+            }
+        }
+
+        private List<string> messages = new List<string>();
+        private void Update()
+        {
+            if (messages.Any())
+            {
+                foreach (var message in messages)
+                {
+                    ErrorMessage.AddError(message);
                 }
+                messages.Clear();
             }
         }
 
         private bool startupChecked = false;
-        private bool ShouldCheckVersions()
+        private async Task ShouldCheckVersionsAsync()
         {
-            if (Config.Frequency == CheckFrequency.Startup)
+            if (Config.Frequency == CheckFrequency.Startup && !startupChecked)
             {
-                return startupChecked ? false : startupChecked = true;
+                startupChecked = true;
+                return;
             }
 
-            startupChecked = true;
+            bool shouldCheck = false;
 
-            switch (Config.Frequency)
+            while (!shouldCheck)
             {
-                default:
-                case CheckFrequency.Never:
-                    return false;
-                case CheckFrequency.Hourly:
-                    return DateTime.UtcNow >= Config.LastChecked.AddHours(1);
-                case CheckFrequency.Daily:
-                    return DateTime.UtcNow >= Config.LastChecked.AddDays(1);
-                case CheckFrequency.Weekly:
-                    return DateTime.UtcNow >= Config.LastChecked.AddDays(7);
-                case CheckFrequency.Monthly:
-                    return DateTime.UtcNow >= Config.LastChecked.AddMonths(1);
+                switch (Config.Frequency)
+                {
+                    default:
+                    case CheckFrequency.Never:
+                        shouldCheck = false;
+                        break;
+                    case CheckFrequency.Hourly:
+                        await SpecificDateTimeAsync(Config.LastChecked.AddHours(1), 60000);
+                        shouldCheck = true;
+                        break;
+                    case CheckFrequency.Daily:
+                        await SpecificDateTimeAsync(Config.LastChecked.AddDays(1), 3600000);
+                        shouldCheck = true;
+                        break;
+                    case CheckFrequency.Weekly:
+                        await SpecificDateTimeAsync(Config.LastChecked.AddDays(7), 3600000);
+                        shouldCheck = true;
+                        break;
+                    case CheckFrequency.Monthly:
+                        await SpecificDateTimeAsync(Config.LastChecked.AddMonths(1), 3600000);
+                        shouldCheck = true;
+                        break;
+                }
+
+                if (!shouldCheck)
+                    await Task.Delay(60000);
             }
+        }
+        private async Task SpecificDateTimeAsync(DateTime dateTime, int delay = 1000)
+        {
+            while (DateTime.UtcNow < dateTime)
+                await Task.Delay(delay);
+        }
+
+        private async Task NoWaitScreenAsync()
+        {
+            while (WaitScreen.main?.isShown ?? false)
+                await Task.Delay(1000);
         }
     }
 }
