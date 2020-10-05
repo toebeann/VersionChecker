@@ -312,7 +312,12 @@ namespace Straitjacket.Utility.VersionChecker
                 string url = versionRecord.NexusAPIModUrl;
                 Dictionary<string, string> headers = new Dictionary<string, string> { ["apikey"] = nexusApiKey };
                 NexusAPI.ModJson JSON = await Networking.ReadJSONAsync<NexusAPI.ModJson>(url, headers);
-                return VersionParser.GetVersion(JSON.Version);
+
+                if (JSON.Available)
+                    return VersionParser.GetVersion(JSON.Version);
+                else    // if the mod is unavailable on nexus mods, return the current version so the user is not constantly
+                        // bugged to update a mod they can't access
+                    return versionRecord.CurrentVersion;
             }
         }
 
