@@ -12,10 +12,7 @@ using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Utility.VersionChecker
 {
-    /// <summary>
-    /// An API for checking the client is running the latest version of a mod, informing the user if it is not.
-    /// </summary>
-    public class VersionChecker : MonoBehaviourSingleton<VersionChecker>
+    internal class VersionChecker : MonoBehaviourSingleton<VersionChecker>
     {
         internal const string Version = "1.2.0.0";
 
@@ -33,132 +30,6 @@ namespace Straitjacket.Utility.VersionChecker
 
         internal static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
         internal static IVersionParser VersionParser { get; } = new VersionParser();
-
-        /// <summary>
-        /// Entry point for the VersionChecker API when the latest version number is stored in plain text at a given URL as an Assembly Version.
-        /// </summary>
-        /// <param name="URL">The URL at which the plain text file containing the latest version number can be found.</param>
-        /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
-        /// compiled assembly.</param>
-        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.", true)]
-        public static void Check(string URL, Version currentVersion = null, string displayName = null)
-        {
-            GetSingleton();
-
-            var assembly = Assembly.GetCallingAssembly();
-            var qMod = QModServices.Main.FindModByAssembly(assembly);
-            if (qMod == null)
-            {
-                throw new NullReferenceException();
-            }
-            if (CheckedVersions.ContainsKey(qMod))
-            {
-                return;
-            }
-
-            if (currentVersion == null)
-            {
-                currentVersion = qMod.ParsedVersion;
-            }
-            if (displayName == null)
-            {
-                displayName = qMod.DisplayName;
-            }
-
-            string prefix = assembly == Assembly.GetAssembly(typeof(VersionChecker))
-                ? string.Empty
-                : $"[{displayName}] ";
-
-            if (currentVersion == null)
-            {
-
-                Logger.LogError($"{prefix}There was an error retrieving the current version.");
-                return;
-            }
-
-            var versionRecord = CheckedVersions[qMod] = new VersionRecord
-            {
-                Assembly = assembly,
-                DisplayName = displayName,
-                Colour = GetColour(),
-                URL = URL,
-                CurrentVersion = currentVersion,
-                UpdateAsync = async () =>
-                {
-                    Version version = await GetLatestVersionAsync(URL);
-                    CheckedVersions[qMod].LatestVersion = version;
-                }
-            };
-            Logger.LogInfo($"{prefix}Currently running v{currentVersion}.");
-        }
-
-        /// <summary>
-        /// Entry point for the VersionChecker API when the latest version number is stored in a JSON file at a given URL as an Assembly Version.
-        /// </summary>
-        /// <typeparam name="TJsonObject">The type of the class which will be used for deserializing the JSON file.</typeparam>
-        /// <param name="URL">The URL at which the JSON file containing the latest version number can be found.</param>
-        /// <param name="versionProperty">The name of the property in <typeparamref name="TJsonObject"/> which holds the version number.</param>
-        /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
-        /// compiled assembly.</param>
-        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.", true)]
-        public static void Check<TJsonObject>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
-            where TJsonObject : class
-        {
-            GetSingleton();
-
-            var assembly = Assembly.GetCallingAssembly();
-            var qMod = QModServices.Main.FindModByAssembly(assembly);
-            if (qMod == null)
-            {
-                throw new NullReferenceException();
-            }
-            if (CheckedVersions.ContainsKey(qMod))
-            {
-                return;
-            }
-
-            if (currentVersion == null)
-            {
-                currentVersion = qMod.ParsedVersion;
-            }
-            if (displayName == null)
-            {
-                displayName = qMod.DisplayName;
-            }
-
-            string prefix = assembly == Assembly.GetAssembly(typeof(VersionChecker))
-                ? string.Empty
-                : $"[{displayName}] ";
-
-            if (currentVersion == null)
-            {
-                Logger.LogError($"{prefix}There was an error retrieving the current version.");
-                return;
-            }
-
-            var versionRecord = CheckedVersions[qMod] = new VersionRecord
-            {
-                Assembly = assembly,
-                DisplayName = displayName,
-                Colour = GetColour(),
-                URL = URL,
-                CurrentVersion = currentVersion,
-                UpdateAsync = async () =>
-                {
-                    PropertyInfo versionPropertyInfo = typeof(ModJson).GetProperty(versionProperty);
-                    if (versionPropertyInfo == null)
-                        throw new InvalidOperationException($"Property {versionProperty} not found in type {typeof(TJsonObject)}");
-
-                    Version version = await GetLatestVersionAsync<TJsonObject>(URL, versionPropertyInfo);
-                    CheckedVersions[qMod].LatestVersion = version;
-                }
-            };
-            Logger.LogInfo($"{prefix}Currently running v{currentVersion}.");
-        }
 
         internal static void Check(string URL, IQMod qMod)
         {
@@ -323,9 +194,6 @@ namespace Straitjacket.Utility.VersionChecker
 
         internal static Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
 
-        /// <summary>
-        /// Called from Awake for the singleton instance of VersionChecker
-        /// </summary>
         protected override void SingletonAwake()
         {
             DontDestroyOnLoad(this);
