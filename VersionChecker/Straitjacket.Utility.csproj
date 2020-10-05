@@ -80,9 +80,11 @@
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Networking.cs" />
+    <Compile Include="NexusAPI\ModJson.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ModJson.cs" />
     <Compile Include="VersionChecker.cs" />
+    <Compile Include="VersionCheckerAPI\ModJson.cs" />
     <Compile Include="VersionRecord.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -95,6 +97,6 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>echo f | xcopy "$(ProjectDir)mod_$(ConfigurationName).json" "$(TargetDir)$(SolutionName)\mod.json" /y
-if exist "E:\Toadbomb\Documents\PowerShell Scripts\Subnautica Modding\post-build.ps1" powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File "E:\Toadbomb\Documents\PowerShell Scripts\Subnautica Modding\post-build.ps1" -ProjectName $(SolutionName) -ConfigurationName $(ConfigurationName) -ProjectDir $(ProjectDir) -TargetDir $(TargetDir) -TargetPath $(TargetPath) -CopyXMLs</PostBuildEvent>
+if exist "E:\Toadbomb\Documents\PowerShell Scripts\Subnautica Modding\post-build.ps1" powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File "E:\Toadbomb\Documents\PowerShell Scripts\Subnautica Modding\post-build.ps1" -ProjectName $(SolutionName) -ConfigurationName $(ConfigurationName) -ProjectDir $(ProjectDir) -TargetDir $(TargetDir) -TargetPath $(TargetPath) -CopyXMLs -SteamPath foobar</PostBuildEvent>
   </PropertyGroup>
 </Project>
