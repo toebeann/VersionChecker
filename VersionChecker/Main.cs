@@ -8,8 +8,8 @@ using QModManager.API;
 using QModManager.API.ModLoading;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
-using System.Linq;
 using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Utility.VersionChecker
@@ -25,7 +25,7 @@ namespace Straitjacket.Utility.VersionChecker
         /// QModManager entry point
         /// </summary>
         [Obsolete("Should not be used!", true)]
-        [QModPrePatch("468FFFD5F36B7F5D4423044475F0B5F4")]
+        [QModPatch]
         public static void Patch()
         {
             Logger.LogInfo("Initialising...");
@@ -40,47 +40,76 @@ namespace Straitjacket.Utility.VersionChecker
 #endif
 
             var QModsPath = Path.Combine(Environment.CurrentDirectory, "QMods");
-            foreach (var modJsonPath in Directory.GetDirectories(QModsPath, "*", SearchOption.TopDirectoryOnly)
-                .SelectMany(subfolder => Directory.GetFiles(subfolder, "mod.json", SearchOption.TopDirectoryOnly)))
+            var subfolders = Directory.GetDirectories(QModsPath, "*", SearchOption.TopDirectoryOnly);
+
+            foreach (var subfolder in subfolders)
             {
-                try
+                if (subfolder.EndsWith($"{Path.DirectorySeparatorChar}.backups"))
+                    continue;
+
+                foreach (var modJsonPath in Directory.GetFiles(subfolder, "mod.json", SearchOption.TopDirectoryOnly))
                 {
-                    var modJson = JsonConvert.DeserializeObject<ModJson>(File.ReadAllText(modJsonPath));
-                    IQMod qMod = QModServices.Main.FindModById(modJson.Id);
-
-                    if (modJson.NexusId != null && (modJson.NexusId.Subnautica != null || modJson.NexusId.BelowZero != null))
+                    try
                     {
-                        QModGame game = Paths.ProcessName switch
+                        var modJson = JsonConvert.DeserializeObject<ModJson>(File.ReadAllText(modJsonPath));
+                        IQMod qMod = QModServices.Main.FindModById(modJson.Id);
+
+                        if (!qMod.Enable)
+                            continue;
+
+                        if (modJson.NexusId != null && (modJson.NexusId.Subnautica != null || modJson.NexusId.BelowZero != null))
                         {
-                            "Subnautica" when modJson.NexusId.Subnautica != null => QModGame.Subnautica,
-                            "Subnautica" when modJson.NexusId.BelowZero != null => QModGame.BelowZero,
-                            "SubnauticaZero" when modJson.NexusId.BelowZero != null => QModGame.BelowZero,
-                            "SubnauticaZero" when modJson.NexusId.Subnautica != null => QModGame.Subnautica,
-                            _ => QModGame.None
-                        };
+                            QModGame game = Paths.ProcessName switch
+                            {
+                                "Subnautica" when modJson.NexusId.Subnautica != null => QModGame.Subnautica,
+                                "Subnautica" when modJson.NexusId.BelowZero != null => QModGame.BelowZero,
+                                "SubnauticaZero" when modJson.NexusId.BelowZero != null => QModGame.BelowZero,
+                                "SubnauticaZero" when modJson.NexusId.Subnautica != null => QModGame.Subnautica,
+                                _ => QModGame.None
+                            };
 
-                        string modIdString = game switch
+                            string modIdString = game switch
+                            {
+                                QModGame.Subnautica => modJson.NexusId.Subnautica,
+                                QModGame.BelowZero => modJson.NexusId.BelowZero,
+                                _ => null
+                            };
+
+                            try
+                            {
+                                uint modId = uint.Parse(modIdString, CultureInfo.InvariantCulture.NumberFormat);
+
+                                VersionChecker.Check(game, modId, qMod, modJson.VersionChecker?.LatestVersionURL);
+                                break;
+                            }
+                            catch (ArgumentNullException e)
+                            {
+                                Logger.LogError($"Skipping NexusId: mod ID is null: {modIdString}");
+                                Logger.LogError(e.Message);
+                            }
+                            catch (FormatException e)
+                            {
+                                Logger.LogError($"Skipping NexusId: mod ID is not a valid unsigned integer: {modIdString}");
+                                Logger.LogError(e.Message);
+                            }
+                            catch (OverflowException e)
+                            {
+                                Logger.LogError($"Skipping NexusId: mod ID is outside the valid range for an unsigned integer: " +
+                                    $"{modIdString}");
+                                Logger.LogError(e.Message);
+                            }
+                        }
+
+                        if (modJson.VersionChecker != null)
                         {
-                            QModGame.Subnautica => modJson.NexusId.Subnautica,
-                            QModGame.BelowZero => modJson.NexusId.BelowZero,
-                            _ => null
-                        };
-
-                        int modId = int.Parse(modIdString);
-
-                        VersionChecker.Check(game, modId, qMod, modJson.VersionChecker?.LatestVersionURL);
-                        break;
+                            VersionChecker.Check(modJson.VersionChecker.LatestVersionURL, qMod);
+                        }
                     }
-
-                    if (modJson.VersionChecker != null)
+                    catch (Exception e)
                     {
-                        VersionChecker.Check(modJson.VersionChecker.LatestVersionURL, qMod);
+                        Logger.LogError($"Encountered an error while attempting to parse JSON: {modJsonPath}");
+                        Logger.LogError(e);
                     }
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError($"Encountered an error while attempting to parse JSON: {modJsonPath}");
-                    Logger.LogError(ex);
                 }
             }
 

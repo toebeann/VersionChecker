@@ -202,7 +202,7 @@ namespace Straitjacket.Utility.VersionChecker
             Logger.LogInfo($"{prefix}Currently running v{qMod.ParsedVersion}.");
         }
 
-        internal static void Check(QModGame game, int modId, IQMod qMod, string URL = null)
+        internal static void Check(QModGame game, uint modId, IQMod qMod, string URL = null)
         {
             GetSingleton();
 
@@ -332,7 +332,6 @@ namespace Straitjacket.Utility.VersionChecker
 
         private delegate string ApiKeyCommand(string apiKey = null);
         private const string VersionCheckerApiKey = "VersionCheckerApiKey";
-        internal const string ApplicationSlug = "Subnautica.VersionChecker";
         internal static string ApiKey;
 
         private string SetApiKey(string apiKey = null)

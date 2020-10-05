@@ -23,7 +23,7 @@ namespace Straitjacket.Utility.VersionChecker
         public Version CurrentVersion;
         public Version LatestVersion;
         public QModGame Game = QModGame.None;
-        public int ModId;
+        public uint ModId;
         public Func<Task> UpdateAsync;
 
         public string NexusDomainName => Game switch
