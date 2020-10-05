@@ -2,7 +2,7 @@
     "Id": "VersionChecker",
     "DisplayName": "VersionChecker",
     "Author": "Tobey Blaber",
-    "Version": "1.1.4",
+    "Version": "1.2",
     "AssemblyName": "Straitjacket.Utility.VersionChecker.dll",
     "Enable": true,
     "Game": "BelowZero",
@@ -11,5 +11,8 @@
     },
     "VersionChecker": {
         "LatestVersionURL": "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_BELOWZERO.json"
+    },
+    "NexusId": {
+        "BelowZero": "66"
     }
 }

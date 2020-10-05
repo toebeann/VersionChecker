@@ -3,14 +3,14 @@ using Oculus.Newtonsoft.Json;
 #elif BELOWZERO
 using Newtonsoft.Json;
 #endif
+using QModManager.API;
 using System;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using UnityEngine;
-using Logger = BepInEx.Subnautica.Logger;
 
-namespace Straitjacket.Utility
+namespace Straitjacket.Utility.VersionChecker
 {
     internal class VersionRecord
     {
@@ -22,7 +22,22 @@ namespace Straitjacket.Utility
         public string URL;
         public Version CurrentVersion;
         public Version LatestVersion;
+        public QModGame Game = QModGame.None;
+        public int ModId;
         public Func<Task> UpdateAsync;
+
+        public string NexusDomainName => Game switch
+        {
+            QModGame.Subnautica => "subnautica",
+            QModGame.BelowZero => "subnauticabelowzero",
+            _ => throw new InvalidOperationException($"Could not get Nexus domain name for QModGame: {Game}")
+        };
+        public string NexusAPIModUrl => Game == QModGame.None || ModId == 0
+            ? null
+            : $"https://api.nexusmods.com/v1/games/{NexusDomainName}/mods/{ModId}.json";
+        public string VersionCheckerAPIModUrl => Game == QModGame.None || ModId == 0
+            ? null
+            : $"https://mods.vc.api.straitjacket.software/v1/games/{NexusDomainName}/mods/{ModId}.json";
 
         public VersionState State
         {
@@ -55,42 +70,36 @@ namespace Straitjacket.Utility
                     ? string.Empty
                     : $"[{DisplayName}] ";
 
-                if (!await Networking.CheckConnectionAsync(URL))
-                {
-                    Logger.LogWarning($"{prefix}Unable to check for updates: Connection unavailable.");
-                    return;
-                }
-
                 try
                 {
                     await UpdateAsync();
                 }
                 catch (WebException e)
                 {
-                    Logger.LogError($"{prefix}There was an error retrieving the latest version: " +
+                    VersionChecker.Main.LogErrors.Add($"{prefix}There was an error retrieving the latest version: " +
                         $"Could not connect to address {URL}");
-                    Logger.LogError(e.Message);
+                    VersionChecker.Main.LogErrors.Add(e.Message);
                 }
                 catch (JsonReaderException e)
                 {
-                    Logger.LogError($"{prefix}There was an error retrieving the latest version: " +
+                    VersionChecker.Main.LogErrors.Add($"{prefix}There was an error retrieving the latest version: " +
                         $"Invalid JSON found at address {URL}");
-                    Logger.LogError(e.Message);
+                    VersionChecker.Main.LogErrors.Add(e.Message);
                 }
                 catch (JsonSerializationException e)
                 {
-                    Logger.LogError($"{prefix}There was an error retrieving the latest version:");
-                    Logger.LogError(e.Message);
+                    VersionChecker.Main.LogErrors.Add($"{prefix}There was an error retrieving the latest version:");
+                    VersionChecker.Main.LogErrors.Add(e.Message);
                 }
                 catch (InvalidOperationException e)
                 {
-                    Logger.LogError($"{prefix}There was an error retrieving the latest version:");
-                    Logger.LogError(e.Message);
+                    VersionChecker.Main.LogErrors.Add($"{prefix}There was an error retrieving the latest version:");
+                    VersionChecker.Main.LogErrors.Add(e.Message);
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError($"{prefix}There was an unhandled error retrieving the latest version.");
-                    Logger.LogError(e);
+                    VersionChecker.Main.LogErrors.Add($"{prefix}There was an unhandled error retrieving the latest version.");
+                    VersionChecker.Main.LogErrors.Add(e.ToString());
                 }
             }
         }
