@@ -10,13 +10,12 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Logger = BepInEx.Subnautica.Logger;
 
-namespace Straitjacket.Utility
+namespace Straitjacket.Utility.VersionChecker
 {
-    /// <summary>
-    /// An API for checking the client is running the latest version of a mod, informing the user if it is not.
-    /// </summary>
-    public class VersionChecker : MonoBehaviourSingleton<VersionChecker>
+    internal class VersionChecker : MonoBehaviourSingleton<VersionChecker>
     {
+        internal const string Version = "1.2.0.0";
+
         internal enum CheckFrequency
         {
             Startup,
@@ -31,132 +30,6 @@ namespace Straitjacket.Utility
 
         internal static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
         internal static IVersionParser VersionParser { get; } = new VersionParser();
-
-        /// <summary>
-        /// Entry point for the VersionChecker API when the latest version number is stored in plain text at a given URL as an Assembly Version.
-        /// </summary>
-        /// <param name="URL">The URL at which the plain text file containing the latest version number can be found.</param>
-        /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
-        /// compiled assembly.</param>
-        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.", true)]
-        public static void Check(string URL, Version currentVersion = null, string displayName = null)
-        {
-            GetSingleton();
-
-            var assembly = Assembly.GetCallingAssembly();
-            var qMod = QModServices.Main.FindModByAssembly(assembly);
-            if (qMod == null)
-            {
-                throw new NullReferenceException();
-            }
-            if (CheckedVersions.ContainsKey(qMod))
-            {
-                return;
-            }
-
-            if (currentVersion == null)
-            {
-                currentVersion = qMod.ParsedVersion;
-            }
-            if (displayName == null)
-            {
-                displayName = qMod.DisplayName;
-            }
-
-            string prefix = assembly == Assembly.GetAssembly(typeof(VersionChecker))
-                ? string.Empty
-                : $"[{displayName}] ";
-
-            if (currentVersion == null)
-            {
-
-                Logger.LogError($"{prefix}There was an error retrieving the current version.");
-                return;
-            }
-
-            var versionRecord = CheckedVersions[qMod] = new VersionRecord
-            {
-                Assembly = assembly,
-                DisplayName = displayName,
-                Colour = GetColour(),
-                URL = URL,
-                CurrentVersion = currentVersion,
-                UpdateAsync = async () =>
-                {
-                    Version version = await GetLatestVersionAsync(URL);
-                    CheckedVersions[qMod].LatestVersion = version;
-                }
-            };
-            Logger.LogInfo($"{prefix}Currently running v{currentVersion}.");
-        }
-
-        /// <summary>
-        /// Entry point for the VersionChecker API when the latest version number is stored in a JSON file at a given URL as an Assembly Version.
-        /// </summary>
-        /// <typeparam name="TJsonObject">The type of the class which will be used for deserializing the JSON file.</typeparam>
-        /// <param name="URL">The URL at which the JSON file containing the latest version number can be found.</param>
-        /// <param name="versionProperty">The name of the property in <typeparamref name="TJsonObject"/> which holds the version number.</param>
-        /// <param name="currentVersion">A <see cref="Version"/> describing the current version number of the mod that is installed.
-        /// Optional. By default, will be retrieved from the mod.json or the compiled assembly.</param>
-        /// <param name="displayName">The display name to use for the mod. Optional. By default, will be retrieved from the mod.json or the mod's
-        /// compiled assembly.</param>
-        [Obsolete("This method is deprecated in favour of adding the VersionChecker object to your mod.json. Please see the wiki for details.", true)]
-        public static void Check<TJsonObject>(string URL, string versionProperty = "Version", Version currentVersion = null, string displayName = null)
-            where TJsonObject : class
-        {
-            GetSingleton();
-
-            var assembly = Assembly.GetCallingAssembly();
-            var qMod = QModServices.Main.FindModByAssembly(assembly);
-            if (qMod == null)
-            {
-                throw new NullReferenceException();
-            }
-            if (CheckedVersions.ContainsKey(qMod))
-            {
-                return;
-            }
-
-            if (currentVersion == null)
-            {
-                currentVersion = qMod.ParsedVersion;
-            }
-            if (displayName == null)
-            {
-                displayName = qMod.DisplayName;
-            }
-
-            string prefix = assembly == Assembly.GetAssembly(typeof(VersionChecker))
-                ? string.Empty
-                : $"[{displayName}] ";
-
-            if (currentVersion == null)
-            {
-                Logger.LogError($"{prefix}There was an error retrieving the current version.");
-                return;
-            }
-
-            var versionRecord = CheckedVersions[qMod] = new VersionRecord
-            {
-                Assembly = assembly,
-                DisplayName = displayName,
-                Colour = GetColour(),
-                URL = URL,
-                CurrentVersion = currentVersion,
-                UpdateAsync = async () =>
-                {
-                    PropertyInfo versionPropertyInfo = typeof(ModJson).GetProperty(versionProperty);
-                    if (versionPropertyInfo == null)
-                        throw new InvalidOperationException($"Property {versionProperty} not found in type {typeof(TJsonObject)}");
-
-                    Version version = await GetLatestVersionAsync<TJsonObject>(URL, versionPropertyInfo);
-                    CheckedVersions[qMod].LatestVersion = version;
-                }
-            };
-            Logger.LogInfo($"{prefix}Currently running v{currentVersion}.");
-        }
 
         internal static void Check(string URL, IQMod qMod)
         {
@@ -179,6 +52,7 @@ namespace Straitjacket.Utility
             }
 
             string versionProperty = "Version";
+            PropertyInfo versionPropertyInfo = typeof(ModJson).GetProperty(versionProperty);
 
             var versionRecord = CheckedVersions[qMod] = new VersionRecord
             {
@@ -189,7 +63,6 @@ namespace Straitjacket.Utility
                 CurrentVersion = qMod.ParsedVersion,
                 UpdateAsync = async () =>
                 {
-                    PropertyInfo versionPropertyInfo = typeof(ModJson).GetProperty(versionProperty);
                     if (versionPropertyInfo == null)
                         throw new InvalidOperationException($"Property {versionProperty} not found in type {typeof(ModJson)}");
 
@@ -198,6 +71,79 @@ namespace Straitjacket.Utility
                 }
             };
             Logger.LogInfo($"{prefix}Currently running v{qMod.ParsedVersion}.");
+        }
+
+        internal static void Check(QModGame game, uint modId, IQMod qMod, string URL = null)
+        {
+            GetSingleton();
+
+            if (qMod == null)
+                throw new ArgumentNullException("qMod");
+
+            if (CheckedVersions.ContainsKey(qMod))
+                return;
+
+            string prefix = qMod.LoadedAssembly == Assembly.GetAssembly(typeof(VersionChecker))
+                ? string.Empty
+                : $"[{qMod.DisplayName}] ";
+
+            if (qMod.ParsedVersion == null)
+            {
+                Logger.LogError($"{prefix}There was an error retrieving the current version: QModManager failed to parse.");
+                return;
+            }
+
+            string versionProperty = "Version";
+            PropertyInfo versionPropertyInfo = typeof(ModJson).GetProperty(versionProperty);
+
+            var versionRecord = CheckedVersions[qMod] = new VersionRecord
+            {
+                Assembly = qMod.LoadedAssembly,
+                DisplayName = qMod.DisplayName,
+                Colour = GetColour(),
+                CurrentVersion = qMod.ParsedVersion,
+                Game = game,
+                ModId = modId,
+                URL = URL
+            };
+            versionRecord.UpdateAsync = async () =>
+            {
+                string apiKey = string.IsNullOrWhiteSpace(ApiKey)
+                ? (ApiKey = PlayerPrefs.HasKey(VersionCheckerApiKey)
+                    ? PlayerPrefs.GetString(VersionCheckerApiKey)
+                    : null)
+                : ApiKey;
+
+                try
+                {
+                    Version version = await GetLatestVersionAsync(versionRecord, apiKey);
+                    CheckedVersions[qMod].LatestVersion = version;
+                }
+                catch (Exception)
+                {
+                    Version version;
+
+                    if (apiKey != null)
+                    {
+                        try
+                        {
+                            version = await GetLatestVersionAsync(versionRecord);
+                            CheckedVersions[qMod].LatestVersion = version;
+                            return;
+                        }
+                        catch (Exception) { }
+                    }
+
+                    if (URL == null)
+                        throw new InvalidOperationException("Could not retrieve version from Nexus Mods API and no VersionChecker github URL is defined as a fallback.");
+
+                    if (versionPropertyInfo == null)
+                        throw new InvalidOperationException($"Property {versionProperty} not found in type {typeof(ModJson)}");
+
+                    version = await GetLatestVersionAsync<ModJson>(URL, versionPropertyInfo);
+                    CheckedVersions[qMod].LatestVersion = version;
+                }
+            };
         }
 
         internal static async Task<Version> GetLatestVersionAsync(string URL)
@@ -224,16 +170,68 @@ namespace Straitjacket.Utility
             return VersionParser.GetVersion((string)versionPropertyInfo.GetValue(JSON, null));
         }
 
+        internal static async Task<Version> GetLatestVersionAsync(VersionRecord versionRecord, string nexusApiKey = null)
+        {
+            if (nexusApiKey == null)
+            {
+                string url = versionRecord.VersionCheckerAPIModUrl;
+                VersionCheckerAPI.ModJson JSON = await Networking.ReadJSONAsync<VersionCheckerAPI.ModJson>(url);
+                return VersionParser.GetVersion(JSON.Version);
+            }
+            else
+            {
+                string url = versionRecord.NexusAPIModUrl;
+                Dictionary<string, string> headers = new Dictionary<string, string> { ["apikey"] = nexusApiKey };
+                NexusAPI.ModJson JSON = await Networking.ReadJSONAsync<NexusAPI.ModJson>(url, headers);
+
+                if (JSON.Available)
+                    return VersionParser.GetVersion(JSON.Version);
+                else    // if the mod is unavailable on nexus mods, return the current version so the user is not constantly
+                        // bugged to update a mod they can't access
+                    return versionRecord.CurrentVersion;
+            }
+        }
+
         internal static Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
 
-        /// <summary>
-        /// Called from Awake for the singleton instance of VersionChecker
-        /// </summary>
         protected override void SingletonAwake()
         {
             DontDestroyOnLoad(this);
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
+
+            ConsoleCommandsHandler.Main.RegisterConsoleCommand<ApiKeyCommand>("apikey", SetApiKey);
+        }
+
+        private delegate string ApiKeyCommand(string apiKey = null);
+        private const string VersionCheckerApiKey = "VersionCheckerApiKey";
+        internal static string ApiKey;
+
+        private string SetApiKey(string apiKey = null)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                if (PlayerPrefs.HasKey(VersionCheckerApiKey))
+                {
+                    apiKey = PlayerPrefs.GetString(VersionCheckerApiKey);
+                    return $"Nexus API key ending in {apiKey.Substring(Math.Max(0, apiKey.Length - 4))} is set.";
+                }
+                else
+                {
+                    return "Nexus API key not set.";
+                }
+            }
+            else if (apiKey.ToLowerInvariant() == "unset")
+            {
+                PlayerPrefs.DeleteKey(VersionCheckerApiKey);
+                return "Nexus API key unset.";
+            }
+            else
+            {
+                PlayerPrefs.SetString(VersionCheckerApiKey, ApiKey = apiKey.Trim());
+                Config.LastChecked = default;
+                return "Nexus API key set.";
+            }
         }
 
         private void OnDestroy() => StopAllCoroutines();
@@ -281,17 +279,18 @@ namespace Straitjacket.Utility
         {
             while (true)
             {
-                Logger.LogDebug("Awaiting next check...");
+                LogDebugs.Add("Awaiting next check...");
                 await ShouldCheckVersionsAsync();
-                Logger.LogDebug("Time to check versions.");
+                LogDebugs.Add("Time to check versions.");
 
                 Config.LastChecked = DateTime.UtcNow;
                 Config.Save();
 
-                Logger.LogInfo("Initiating version checks...");
+                LogInfos.Add("Initiating version checks...");
+
                 IEnumerable<Task> updateRecordTasks = CheckedVersions.Values.Select(x => x.UpdateLatestVersionAsync());
                 await Task.WhenAll(updateRecordTasks);
-                Logger.LogInfo("Version checks complete.");
+                LogInfos.Add("Version checks complete.");
 
                 _ = Task.Run(() => PrintOutdatedVersionsAsync());
             }
@@ -315,11 +314,11 @@ namespace Straitjacket.Utility
             switch (versionRecord.State)
             {
                 case VersionRecord.VersionState.Outdated:
-                    Logger.LogWarning($"{prefix}{versionRecord.Message(false)}");
+                    LogWarnings.Add($"{prefix}{versionRecord.Message(false)}");
 
                     for (var i = 0; i < 3; i++)
                     {
-                        messages.Add($"[<color=#{ColorUtility.ToHtmlStringRGB(versionRecord.Colour)}>" +
+                        displayMessages.Add($"[<color=#{ColorUtility.ToHtmlStringRGB(versionRecord.Colour)}>" +
                             $"{versionRecord.DisplayName}</color>] {versionRecord.Message(true)}");
 
                         if (i < 2)
@@ -327,26 +326,70 @@ namespace Straitjacket.Utility
                     }
                     break;
                 case VersionRecord.VersionState.Unknown:
-                    Logger.LogWarning($"{prefix}{versionRecord.Message(false)}");
+                    LogWarnings.Add($"{prefix}{versionRecord.Message(false)}");
                     break;
                 case VersionRecord.VersionState.Ahead:
                 case VersionRecord.VersionState.Current:
                 default:
-                    Logger.LogMessage($"{prefix}{versionRecord.Message(false)}");
+                    LogMessages.Add($"{prefix}{versionRecord.Message(false)}");
                     break;
             }
         }
 
-        private List<string> messages = new List<string>();
+        internal List<string> LogDebugs = new List<string>();
+        internal List<string> LogInfos = new List<string>();
+        internal List<string> LogMessages = new List<string>();
+        internal List<string> LogWarnings = new List<string>();
+        internal List<string> LogErrors = new List<string>();
+        private List<string> displayMessages = new List<string>();
         private void Update()
         {
-            if (messages.Any())
+            if (displayMessages.Any())
             {
-                foreach (var message in messages)
-                {
+                foreach (var message in displayMessages)
                     ErrorMessage.AddError(message);
-                }
-                messages.Clear();
+
+                displayMessages.Clear();
+            }
+
+            if (LogDebugs.Any())
+            {
+                foreach (var debug in LogDebugs)
+                    Logger.LogDebug(debug);
+
+                LogDebugs.Clear();
+            }
+
+            if (LogInfos.Any())
+            {
+                foreach (var info in LogInfos)
+                    Logger.LogInfo(info);
+
+                LogInfos.Clear();
+            }
+
+            if (LogMessages.Any())
+            {
+                foreach (var message in LogMessages)
+                    Logger.LogMessage(message);
+
+                LogMessages.Clear();
+            }
+
+            if (LogWarnings.Any())
+            {
+                foreach (var warning in LogWarnings)
+                    Logger.LogWarning(warning);
+
+                LogWarnings.Clear();
+            }
+
+            if (LogErrors.Any())
+            {
+                foreach (var error in LogErrors)
+                    Logger.LogError(error);
+
+                LogErrors.Clear();
             }
         }
 

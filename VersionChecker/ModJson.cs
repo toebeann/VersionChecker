@@ -32,8 +32,14 @@ namespace Straitjacket.Utility
         /// <summary>
         /// An object containing properties for VersionChecker.
         /// </summary>
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        [JsonProperty]
         public VersionCheckerOptions VersionChecker { get; set; } = null;
+
+        /// <summary>
+        /// An object containing Nexus Mods ids for VersionChecker, SAM etc.
+        /// </summary>
+        [JsonProperty]
+        public NexusIdOptions NexusId { get; set; } = null;
 
         /// <summary>
         /// VersionCheckerOptions class describing the properties belonging to the VersionChecker mod.json object.
@@ -46,6 +52,24 @@ namespace Straitjacket.Utility
             /// </summary>
             [JsonRequired]
             public string LatestVersionURL { get; set; }
+        }
+
+        /// <summary>
+        /// NexusIdOptions class describing the properties belonging to the NexusId mod.json object.
+        /// </summary>
+        public class NexusIdOptions
+        {
+            /// <summary>
+            /// Nexus Mods Id for the game on the Subnautica Nexus Mods site.
+            /// </summary>
+            [JsonProperty(DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
+            public string Subnautica { get; set; } = null;
+
+            /// <summary>
+            /// Nexus Mods Id for the game on the Subnautica: Below Zero Nexus Mods site.
+            /// </summary>
+            [JsonProperty(DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
+            public string BelowZero { get; set; } = null;
         }
     }
 }
