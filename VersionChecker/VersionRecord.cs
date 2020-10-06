@@ -9,6 +9,7 @@ using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using UnityEngine;
+using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Utility.VersionChecker
 {
@@ -76,30 +77,30 @@ namespace Straitjacket.Utility.VersionChecker
                 }
                 catch (WebException e)
                 {
-                    VersionChecker.Main.LogErrors.Add($"{prefix}There was an error retrieving the latest version: " +
+                    _ = Logger.LogErrorAsync($"{prefix}There was an error retrieving the latest version: " +
                         $"Could not connect to address {URL}");
-                    VersionChecker.Main.LogErrors.Add(e.Message);
+                    _ = Logger.LogErrorAsync(e.Message);
                 }
                 catch (JsonReaderException e)
                 {
-                    VersionChecker.Main.LogErrors.Add($"{prefix}There was an error retrieving the latest version: " +
+                    _ = Logger.LogErrorAsync($"{prefix}There was an error retrieving the latest version: " +
                         $"Invalid JSON found at address {URL}");
-                    VersionChecker.Main.LogErrors.Add(e.Message);
+                    _ = Logger.LogErrorAsync(e.Message);
                 }
                 catch (JsonSerializationException e)
                 {
-                    VersionChecker.Main.LogErrors.Add($"{prefix}There was an error retrieving the latest version:");
-                    VersionChecker.Main.LogErrors.Add(e.Message);
+                    _ = Logger.LogErrorAsync($"{prefix}There was an error retrieving the latest version:");
+                    _ = Logger.LogErrorAsync(e.Message);
                 }
                 catch (InvalidOperationException e)
                 {
-                    VersionChecker.Main.LogErrors.Add($"{prefix}There was an error retrieving the latest version:");
-                    VersionChecker.Main.LogErrors.Add(e.Message);
+                    _ = Logger.LogErrorAsync($"{prefix}There was an error retrieving the latest version:");
+                    _ = Logger.LogErrorAsync(e.Message);
                 }
                 catch (Exception e)
                 {
-                    VersionChecker.Main.LogErrors.Add($"{prefix}There was an unhandled error retrieving the latest version.");
-                    VersionChecker.Main.LogErrors.Add(e.ToString());
+                    _ = Logger.LogErrorAsync($"{prefix}There was an unhandled error retrieving the latest version.");
+                    _ = Logger.LogErrorAsync(e.ToString());
                 }
             }
         }
