@@ -63,6 +63,9 @@ namespace Straitjacket.Utility.VersionChecker
                 CurrentVersion = qMod.ParsedVersion,
                 UpdateAsync = async () =>
                 {
+                    if (!qMod.IsLoaded)
+                        return;
+
                     if (versionPropertyInfo == null)
                         throw new InvalidOperationException($"Property {versionProperty} not found in type {typeof(ModJson)}");
 
@@ -108,6 +111,9 @@ namespace Straitjacket.Utility.VersionChecker
             };
             versionRecord.UpdateAsync = async () =>
             {
+                if (!qMod.IsLoaded)
+                    return;
+
                 string apiKey = string.IsNullOrWhiteSpace(ApiKey)
                 ? (ApiKey = PlayerPrefs.HasKey(VersionCheckerApiKey)
                     ? PlayerPrefs.GetString(VersionCheckerApiKey)
