@@ -14,7 +14,7 @@ namespace Straitjacket.Utility.VersionChecker
 {
     internal class VersionChecker : MonoBehaviourSingleton<VersionChecker>
     {
-        internal const string Version = "1.2.0.0";
+        internal const string Version = "1.2.1.0";
 
         internal enum CheckFrequency
         {
@@ -244,7 +244,7 @@ namespace Straitjacket.Utility.VersionChecker
                 if (scene.name == "StartScreen")
                 {
                     Main.IsRunning = true;
-                    Task.Run(() => Main.CheckVersionsAsyncLoop());
+                    _ = Main.CheckVersionsAsyncLoop();
                     SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
                 }
             }
@@ -279,20 +279,20 @@ namespace Straitjacket.Utility.VersionChecker
         {
             while (true)
             {
-                LogDebugs.Add("Awaiting next check...");
+                _ = Logger.LogDebugAsync("Awaiting next check...");
                 await ShouldCheckVersionsAsync();
-                LogDebugs.Add("Time to check versions.");
+                _ = Logger.LogDebugAsync("Time to check versions.");
 
                 Config.LastChecked = DateTime.UtcNow;
                 Config.Save();
 
-                LogInfos.Add("Initiating version checks...");
+                _ = Logger.LogInfoAsync("Initiating version checks...");
 
                 IEnumerable<Task> updateRecordTasks = CheckedVersions.Values.Select(x => x.UpdateLatestVersionAsync());
                 await Task.WhenAll(updateRecordTasks);
-                LogInfos.Add("Version checks complete.");
+                _ = Logger.LogInfoAsync("Version checks complete.");
 
-                _ = Task.Run(() => PrintOutdatedVersionsAsync());
+                _ = PrintOutdatedVersionsAsync();
             }
         }
 
@@ -302,7 +302,7 @@ namespace Straitjacket.Utility.VersionChecker
             await Task.Delay(1000);
 
             foreach (var versionRecord in CheckedVersions.Values)
-                _ = Task.Run(() => PrintVersionInfoAsync(versionRecord));
+                _ = PrintVersionInfoAsync(versionRecord);
         }
 
         private async Task PrintVersionInfoAsync(VersionRecord versionRecord)
@@ -314,11 +314,11 @@ namespace Straitjacket.Utility.VersionChecker
             switch (versionRecord.State)
             {
                 case VersionRecord.VersionState.Outdated:
-                    LogWarnings.Add($"{prefix}{versionRecord.Message(false)}");
+                    _ = Logger.LogWarningAsync($"{prefix}{versionRecord.Message(false)}");
 
                     for (var i = 0; i < 3; i++)
                     {
-                        displayMessages.Add($"[<color=#{ColorUtility.ToHtmlStringRGB(versionRecord.Colour)}>" +
+                        _ = Logger.DisplayMessageAsync($"[<color=#{ColorUtility.ToHtmlStringRGB(versionRecord.Colour)}>" +
                             $"{versionRecord.DisplayName}</color>] {versionRecord.Message(true)}");
 
                         if (i < 2)
@@ -326,70 +326,13 @@ namespace Straitjacket.Utility.VersionChecker
                     }
                     break;
                 case VersionRecord.VersionState.Unknown:
-                    LogWarnings.Add($"{prefix}{versionRecord.Message(false)}");
+                    _ = Logger.LogWarningAsync($"{prefix}{versionRecord.Message(false)}");
                     break;
                 case VersionRecord.VersionState.Ahead:
                 case VersionRecord.VersionState.Current:
                 default:
-                    LogMessages.Add($"{prefix}{versionRecord.Message(false)}");
+                    _ = Logger.LogMessageAsync($"{prefix}{versionRecord.Message(false)}");
                     break;
-            }
-        }
-
-        internal List<string> LogDebugs = new List<string>();
-        internal List<string> LogInfos = new List<string>();
-        internal List<string> LogMessages = new List<string>();
-        internal List<string> LogWarnings = new List<string>();
-        internal List<string> LogErrors = new List<string>();
-        private List<string> displayMessages = new List<string>();
-        private void Update()
-        {
-            if (displayMessages.Any())
-            {
-                foreach (var message in displayMessages)
-                    ErrorMessage.AddError(message);
-
-                displayMessages.Clear();
-            }
-
-            if (LogDebugs.Any())
-            {
-                foreach (var debug in LogDebugs)
-                    Logger.LogDebug(debug);
-
-                LogDebugs.Clear();
-            }
-
-            if (LogInfos.Any())
-            {
-                foreach (var info in LogInfos)
-                    Logger.LogInfo(info);
-
-                LogInfos.Clear();
-            }
-
-            if (LogMessages.Any())
-            {
-                foreach (var message in LogMessages)
-                    Logger.LogMessage(message);
-
-                LogMessages.Clear();
-            }
-
-            if (LogWarnings.Any())
-            {
-                foreach (var warning in LogWarnings)
-                    Logger.LogWarning(warning);
-
-                LogWarnings.Clear();
-            }
-
-            if (LogErrors.Any())
-            {
-                foreach (var error in LogErrors)
-                    Logger.LogError(error);
-
-                LogErrors.Clear();
             }
         }
 
