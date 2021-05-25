@@ -14,7 +14,7 @@ namespace Straitjacket.Utility.VersionChecker
 {
     internal class VersionChecker : MonoBehaviourSingleton<VersionChecker>
     {
-        internal const string Version = "1.2.1.0";
+        internal const string Version = "1.2.2.0";
 
         internal enum CheckFrequency
         {
@@ -63,6 +63,9 @@ namespace Straitjacket.Utility.VersionChecker
                 CurrentVersion = qMod.ParsedVersion,
                 UpdateAsync = async () =>
                 {
+                    if (!qMod.IsLoaded)
+                        return;
+
                     if (versionPropertyInfo == null)
                         throw new InvalidOperationException($"Property {versionProperty} not found in type {typeof(ModJson)}");
 
@@ -108,6 +111,9 @@ namespace Straitjacket.Utility.VersionChecker
             };
             versionRecord.UpdateAsync = async () =>
             {
+                if (!qMod.IsLoaded)
+                    return;
+
                 string apiKey = string.IsNullOrWhiteSpace(ApiKey)
                 ? (ApiKey = PlayerPrefs.HasKey(VersionCheckerApiKey)
                     ? PlayerPrefs.GetString(VersionCheckerApiKey)
@@ -241,12 +247,9 @@ namespace Straitjacket.Utility.VersionChecker
         {
             if (Main != null && !Main.IsRunning)
             {
-                if (scene.name == "StartScreen")
-                {
-                    Main.IsRunning = true;
-                    _ = Main.CheckVersionsAsyncLoop();
-                    SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
-                }
+                Main.IsRunning = true;
+                _ = Main.CheckVersionsAsyncLoop();
+                SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
             }
         }
 
