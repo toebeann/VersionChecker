@@ -247,12 +247,9 @@ namespace Straitjacket.Utility.VersionChecker
         {
             if (Main != null && !Main.IsRunning)
             {
-                if (scene.name == "StartScreen")
-                {
-                    Main.IsRunning = true;
-                    _ = Main.CheckVersionsAsyncLoop();
-                    SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
-                }
+                Main.IsRunning = true;
+                _ = Main.CheckVersionsAsyncLoop();
+                SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
             }
         }
 
