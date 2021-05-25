@@ -14,7 +14,7 @@ namespace Straitjacket.Utility.VersionChecker
 {
     internal class VersionChecker : MonoBehaviourSingleton<VersionChecker>
     {
-        internal const string Version = "1.2.1.0";
+        internal const string Version = "1.2.2.0";
 
         internal enum CheckFrequency
         {
