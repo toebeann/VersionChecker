@@ -31,6 +31,16 @@ namespace Straitjacket.Utility.VersionChecker
             Logger.LogInfo("Initialising...");
             var stopwatch = Stopwatch.StartNew();
 
+            InitializeVersionCheckerVersionChecks();
+            InitialiseQModManagerVersionChecks();
+            InitialiseQModVersionChecks();
+
+            stopwatch.Stop();
+            Logger.LogInfo($"Initialised in {stopwatch.ElapsedMilliseconds}ms.");
+        }
+
+        private static void InitializeVersionCheckerVersionChecks()
+        {
 #if SUBNAUTICA
             var url = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_SUBNAUTICA.json";
             VersionChecker.Check(QModGame.Subnautica, 467, QModServices.Main.GetMyMod(), url);
@@ -38,7 +48,19 @@ namespace Straitjacket.Utility.VersionChecker
             var url = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_BELOWZERO.json";
             VersionChecker.Check(QModGame.BelowZero, 66, QModServices.Main.GetMyMod(), url);
 #endif
+        }
 
+        private static void InitialiseQModManagerVersionChecks()
+        {
+#if SUBNAUTICA
+            VersionChecker.Check(QModGame.Subnautica, 201, new QModManagerQMod());
+#elif BELOWZERO
+            VersionChecker.Check(QModGame.BelowZero, 1, new QModManagerQMod());
+#endif
+        }
+
+        private static void InitialiseQModVersionChecks()
+        {
             var QModsPath = Path.Combine(Environment.CurrentDirectory, "QMods");
             var subfolders = Directory.GetDirectories(QModsPath, "*", SearchOption.TopDirectoryOnly);
 
@@ -112,9 +134,6 @@ namespace Straitjacket.Utility.VersionChecker
                     }
                 }
             }
-
-            stopwatch.Stop();
-            Logger.LogInfo($"Initialised in {stopwatch.ElapsedMilliseconds}ms.");
         }
     }
 }
