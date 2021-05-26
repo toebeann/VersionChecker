@@ -14,7 +14,7 @@ namespace Straitjacket.Utility
 
         public string DisplayName { get; } = "QModManager";
 
-        public string Author => throw new NotImplementedException();
+        public string Author { get; } = "QModManager";
 
         public QModGame SupportedGame { get; }
 #if SUBNAUTICA
@@ -23,15 +23,15 @@ namespace Straitjacket.Utility
             = QModGame.BelowZero;
 #endif
 
-        public IEnumerable<RequiredQMod> RequiredMods => throw new NotImplementedException();
+        public IEnumerable<RequiredQMod> RequiredMods { get; } = new RequiredQMod[0];
 
-        public IEnumerable<string> ModsToLoadBefore => throw new NotImplementedException();
+        public IEnumerable<string> ModsToLoadBefore { get; } = new string[0];
 
-        public IEnumerable<string> ModsToLoadAfter => throw new NotImplementedException();
+        public IEnumerable<string> ModsToLoadAfter { get; } = new string[0];
 
         public Assembly LoadedAssembly { get; } = Assembly.GetAssembly(typeof(IQMod));
 
-        public string AssemblyName => throw new NotImplementedException();
+        public string AssemblyName => LoadedAssembly.GetName().Name;
 
         public Version ParsedVersion => LoadedAssembly.GetName().Version;
 
