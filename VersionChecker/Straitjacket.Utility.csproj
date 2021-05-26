@@ -81,6 +81,7 @@
     <Compile Include="NexusAPI\ModJson.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ModJson.cs" />
+    <Compile Include="QModManagerQMod.cs" />
     <Compile Include="VersionChecker.cs" />
     <Compile Include="VersionCheckerAPI\ModJson.cs" />
     <Compile Include="VersionRecord.cs" />
