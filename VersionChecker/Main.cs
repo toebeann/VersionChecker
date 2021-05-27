@@ -74,11 +74,10 @@ namespace Straitjacket.Utility.VersionChecker
                     try
                     {
                         var modJson = JsonConvert.DeserializeObject<ModJson>(File.ReadAllText(modJsonPath));
-                        IQMod qMod = QModServices.Main.FindModById(modJson.Id);
-
-                        if (!qMod.Enable)
+                        if (!modJson.Enable)
                             continue;
 
+                        IQMod qMod = QModServices.Main.FindModById(modJson.Id);
                         if (modJson.NexusId != null && (modJson.NexusId.Subnautica != null || modJson.NexusId.BelowZero != null))
                         {
                             QModGame game = Paths.ProcessName switch
