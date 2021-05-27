@@ -30,6 +30,12 @@ namespace Straitjacket.Utility
         public string Id { get; set; }
 
         /// <summary>
+        /// Whether the mod is enabled.
+        /// </summary>
+        [JsonProperty]
+        public bool Enable { get; set; } = true;
+
+        /// <summary>
         /// An object containing properties for VersionChecker.
         /// </summary>
         [JsonProperty]
