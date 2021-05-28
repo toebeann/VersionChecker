@@ -12,7 +12,7 @@ using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Utility.VersionChecker
 {
-    internal class VersionChecker : MonoBehaviourSingleton<VersionChecker>
+    internal class VersionChecker : MonoBehaviour
     {
         internal const string Version = "1.3.0.1";
 
@@ -26,15 +26,14 @@ namespace Straitjacket.Utility.VersionChecker
             Never
         }
 
-        internal static VersionChecker GetSingleton() => Main ?? new GameObject("VersionChecker").AddComponent<VersionChecker>();
+        internal static VersionChecker main;
+        internal static VersionChecker Main => main == null ? new GameObject("VersionChecker").AddComponent<VersionChecker>() : main;
 
-        internal static Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
-        internal static IVersionParser VersionParser { get; } = new VersionParser();
+        internal Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
+        internal IVersionParser VersionParser { get; } = new VersionParser();
 
-        internal static void Check(string URL, IQMod qMod)
+        internal void Check(string URL, IQMod qMod)
         {
-            GetSingleton();
-
             if (qMod == null)
                 throw new ArgumentNullException("qMod");
 
@@ -76,10 +75,8 @@ namespace Straitjacket.Utility.VersionChecker
             Logger.LogInfo($"{prefix}Currently running v{qMod.ParsedVersion}.");
         }
 
-        internal static void Check(QModGame game, uint modId, IQMod qMod, string URL = null)
+        internal void Check(QModGame game, uint modId, IQMod qMod, string URL = null)
         {
-            GetSingleton();
-
             if (qMod == null)
                 throw new ArgumentNullException("qMod");
 
@@ -152,7 +149,7 @@ namespace Straitjacket.Utility.VersionChecker
             };
         }
 
-        internal static async Task<Version> GetLatestVersionAsync(string URL)
+        internal async Task<Version> GetLatestVersionAsync(string URL)
         {
             var text = await Networking.ReadAllTextAsync(URL);
 
@@ -164,7 +161,7 @@ namespace Straitjacket.Utility.VersionChecker
             throw new NullReferenceException();
         }
 
-        internal static async Task<Version> GetLatestVersionAsync<TJsonObject>(string URL, PropertyInfo versionPropertyInfo)
+        internal async Task<Version> GetLatestVersionAsync<TJsonObject>(string URL, PropertyInfo versionPropertyInfo)
             where TJsonObject : class
         {
             if (versionPropertyInfo.PropertyType != typeof(string))
@@ -176,7 +173,7 @@ namespace Straitjacket.Utility.VersionChecker
             return VersionParser.GetVersion((string)versionPropertyInfo.GetValue(JSON, null));
         }
 
-        internal static async Task<Version> GetLatestVersionAsync(VersionRecord versionRecord, string nexusApiKey = null)
+        internal async Task<Version> GetLatestVersionAsync(VersionRecord versionRecord, string nexusApiKey = null)
         {
             if (nexusApiKey == null)
             {
@@ -198,15 +195,24 @@ namespace Straitjacket.Utility.VersionChecker
             }
         }
 
-        internal static Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
+        internal Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
 
-        protected override void SingletonAwake()
+        private void Awake()
         {
-            DontDestroyOnLoad(this);
-            SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
-            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
+            if (main != null && main != this)
+            {
+                Destroy(this);
+            }
+            else
+            {
+                main = this;
+                gameObject.AddComponent<SceneCleanerPreserve>();
+                DontDestroyOnLoad(this);
+                SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
+                SceneManager.sceneLoaded += SceneManager_sceneLoaded;
 
-            ConsoleCommandsHandler.Main.RegisterConsoleCommand<ApiKeyCommand>("apikey", SetApiKey);
+                ConsoleCommandsHandler.Main.RegisterConsoleCommand<ApiKeyCommand>("apikey", SetApiKey);
+            }
         }
 
         private delegate string ApiKeyCommand(string apiKey = null);
@@ -243,7 +249,7 @@ namespace Straitjacket.Utility.VersionChecker
         private void OnDestroy() => StopAllCoroutines();
 
         private bool IsRunning = false;
-        private static void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
+        private void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (Main != null && !Main.IsRunning)
             {
