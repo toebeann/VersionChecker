@@ -13,18 +13,16 @@ namespace Straitjacket.Utility
     {
         internal static async Task<string> ReadAllTextAsync(string URL, Dictionary<string, string> headers = null)
         {
-            using (var client = new WebClient())
+            using var client = new WebClient();
+            if (headers != null)
             {
-                if (headers != null)
+                foreach (var header in headers)
                 {
-                    foreach (var header in headers)
-                    {
-                        client.Headers.Add(header.Key, header.Value);
-                    }
+                    client.Headers.Add(header.Key, header.Value);
                 }
-
-                return await client.DownloadStringTaskAsync(URL);
             }
+
+            return await client.DownloadStringTaskAsync(URL);
         }
 
         internal static async Task<TJsonObject> ReadJSONAsync<TJsonObject>(string URL, Dictionary<string, string> headers = null)
