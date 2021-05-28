@@ -251,10 +251,10 @@ namespace Straitjacket.Utility.VersionChecker
         private bool IsRunning = false;
         private void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (Main != null && !Main.IsRunning)
+            if (!IsRunning)
             {
-                Main.IsRunning = true;
-                _ = Main.CheckVersionsAsyncLoop();
+                IsRunning = true;
+                _ = CheckVersionsAsyncLoop();
                 SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
             }
         }
