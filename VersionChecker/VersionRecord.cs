@@ -58,7 +58,6 @@ namespace Straitjacket.Utility.VersionChecker
         public Version LatestVersion { get; private set; }
         public QModGame Game { get; set; } = QModGame.None;
         public uint ModId { get; }
-        public Func<Task> UpdateAsync { get; }
 
         public string NexusDomainName => Game switch
         {
@@ -89,41 +88,69 @@ namespace Straitjacket.Utility.VersionChecker
 
         public async Task UpdateLatestVersionAsync()
         {
-            if (UpdateAsync != null)
+            if (!QMod.IsLoaded)
             {
-                string prefix = Prefix;
+                return;
+            }
 
-                try
+            try
+            {
+                if (Game == QModGame.None)
                 {
-                    await UpdateAsync();
+                    LatestVersion = await GetLatestVersionAsync();
                 }
-                catch (WebException e)
+                else
                 {
-                    _ = Logger.LogErrorAsync($"{prefix}There was an error retrieving the latest version: " +
-                        $"Could not connect to address {URL}");
-                    _ = Logger.LogErrorAsync(e.Message);
+                    bool success;
+                    (success, LatestVersion) = await TryGetNexusAPILatestVersionAsync();
+                    if (success)
+                    {
+                        return;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(VersionChecker.ApiKey))
+                    {
+                        (success, LatestVersion) = await TryGetVersionCheckerAPILatestVersionAsync();
+                        if (success)
+                        {
+                            return;
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(URL))
+                    {
+                        throw new InvalidOperationException("Could not retrieve version from Nexus Mods API and no VersionChecker github URL is defined as a fallback.");
+                    }
+
+                    LatestVersion = await GetLatestVersionAsync();
                 }
-                catch (JsonReaderException e)
-                {
-                    _ = Logger.LogErrorAsync($"{prefix}There was an error retrieving the latest version: " +
-                        $"Invalid JSON found at address {URL}");
-                    _ = Logger.LogErrorAsync(e.Message);
-                }
-                catch (JsonSerializationException e)
-                {
-                    _ = Logger.LogErrorAsync($"{prefix}There was an error retrieving the latest version:");
-                    _ = Logger.LogErrorAsync(e.Message);
-                }
-                catch (InvalidOperationException e)
-                {
-                    _ = Logger.LogErrorAsync($"{prefix}There was an error retrieving the latest version:");
-                    _ = Logger.LogErrorAsync(e.Message);
-                }
-                catch (Exception e)
-                {
-                    _ = Logger.LogErrorAsync($"{prefix}There was an unhandled error retrieving the latest version.");
-                    _ = Logger.LogErrorAsync(e.ToString());
-                }
+            }
+            catch (WebException e)
+            {
+                _ = Logger.LogErrorAsync($"{Prefix}There was an error retrieving the latest version: " +
+                    $"Could not connect to address {URL}");
+                _ = Logger.LogErrorAsync(e.Message);
+            }
+            catch (JsonReaderException e)
+            {
+                _ = Logger.LogErrorAsync($"{Prefix}There was an error retrieving the latest version: " +
+                    $"Invalid JSON found at address {URL}");
+                _ = Logger.LogErrorAsync(e.Message);
+            }
+            catch (JsonSerializationException e)
+            {
+                _ = Logger.LogErrorAsync($"{Prefix}There was an error retrieving the latest version:");
+                _ = Logger.LogErrorAsync(e.Message);
+            }
+            catch (InvalidOperationException e)
+            {
+                _ = Logger.LogErrorAsync($"{Prefix}There was an error retrieving the latest version:");
+                _ = Logger.LogErrorAsync(e.Message);
+            }
+            catch (Exception e)
+            {
+                _ = Logger.LogErrorAsync($"{Prefix}There was an unhandled error retrieving the latest version.");
+                _ = Logger.LogErrorAsync(e.ToString());
             }
         }
 
@@ -154,15 +181,6 @@ namespace Straitjacket.Utility.VersionChecker
                 throw new InvalidOperationException();
             }
 
-            UpdateAsync = async () =>
-            {
-                if (!QMod.IsLoaded)
-                {
-                    return;
-                }
-
-                LatestVersion = await GetLatestVersionAsync();
-            };
             Logger.LogInfo($"{Prefix}Currently running v{CurrentVersion}.");
         }
 
@@ -170,46 +188,48 @@ namespace Straitjacket.Utility.VersionChecker
         {
             Game = game;
             ModId = modId;
-
-            string versionProperty = "Version";
-            PropertyInfo versionPropertyInfo = typeof(ModJson).GetProperty(versionProperty);
-
-            UpdateAsync = async () =>
-            {
-                if (!QMod.IsLoaded)
-                {
-                    return;
-                }
-
-                try
-                {
-                    LatestVersion = await GetNexusAPILatestVersionAsync();
-                }
-                catch
-                {
-                    if (!string.IsNullOrWhiteSpace(VersionChecker.ApiKey))
-                    {
-                        try
-                        {
-                            LatestVersion = await GetVersionCheckerAPILatestVersionAsync();
-                        }
-                        catch { }
-                    }
-
-                    if (string.IsNullOrWhiteSpace(URL))
-                    {
-                        throw new InvalidOperationException("Could not retrieve version from Nexus Mods API and no VersionChecker github URL is defined as a fallback.");
-                    }
-
-                    LatestVersion = await GetLatestVersionAsync();
-                }
-            };
         }
 
         private async Task<Version> GetLatestVersionAsync()
         {
             ModJson JSON = await Networking.ReadJSONAsync<ModJson>(URL);
             return VersionParser.GetVersion(JSON.Version);
+        }
+
+        private async Task<(bool, Version)> TryGetNexusAPILatestVersionAsync()
+        {
+            try
+            {
+                return (true, await GetNexusAPILatestVersionAsync());
+            }
+            catch (WebException e)
+            {
+                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version: " +
+                    $"Could not connect to address {URL}");
+                _ = Logger.LogWarningAsync(e.Message);
+            }
+            catch (JsonReaderException e)
+            {
+                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version: " +
+                    $"Invalid JSON found at address {URL}");
+                _ = Logger.LogWarningAsync(e.Message);
+            }
+            catch (JsonSerializationException e)
+            {
+                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version:");
+                _ = Logger.LogWarningAsync(e.Message);
+            }
+            catch (InvalidOperationException e)
+            {
+                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version:");
+                _ = Logger.LogWarningAsync(e.Message);
+            }
+            catch (Exception e)
+            {
+                _ = Logger.LogWarningAsync($"{Prefix}There was an unhandled error retrieving the latest version.");
+                _ = Logger.LogWarningAsync(e.ToString());
+            }
+            return (false, null);
         }
 
         private async Task<Version> GetNexusAPILatestVersionAsync()
@@ -233,6 +253,42 @@ namespace Straitjacket.Utility.VersionChecker
                 // bugged to update a mod they can't access
                 return CurrentVersion;
             }
+        }
+
+        private async Task<(bool, Version)> TryGetVersionCheckerAPILatestVersionAsync()
+        {
+            try
+            {
+                return (true, await GetVersionCheckerAPILatestVersionAsync());
+            }
+            catch (WebException e)
+            {
+                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version: " +
+                    $"Could not connect to address {URL}");
+                _ = Logger.LogWarningAsync(e.Message);
+            }
+            catch (JsonReaderException e)
+            {
+                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version: " +
+                    $"Invalid JSON found at address {URL}");
+                _ = Logger.LogWarningAsync(e.Message);
+            }
+            catch (JsonSerializationException e)
+            {
+                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version:");
+                _ = Logger.LogWarningAsync(e.Message);
+            }
+            catch (InvalidOperationException e)
+            {
+                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version:");
+                _ = Logger.LogWarningAsync(e.Message);
+            }
+            catch (Exception e)
+            {
+                _ = Logger.LogWarningAsync($"{Prefix}There was an unhandled error retrieving the latest version.");
+                _ = Logger.LogWarningAsync(e.ToString());
+            }
+            return (false, null);
         }
 
         private async Task<Version> GetVersionCheckerAPILatestVersionAsync()

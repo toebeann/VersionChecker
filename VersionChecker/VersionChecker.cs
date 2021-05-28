@@ -164,14 +164,10 @@ namespace Straitjacket.Utility.VersionChecker
 
         private async Task PrintVersionInfoAsync(VersionRecord versionRecord)
         {
-            string prefix = versionRecord.Assembly == Assembly.GetAssembly(typeof(VersionChecker))
-                    ? string.Empty
-                    : $"[{versionRecord.DisplayName}] ";
-
             switch (versionRecord.State)
             {
                 case VersionRecord.VersionState.Outdated:
-                    _ = Logger.LogWarningAsync($"{prefix}{versionRecord.Message(false)}");
+                    _ = Logger.LogWarningAsync($"{versionRecord.Prefix}{versionRecord.Message(false)}");
 
                     for (var i = 0; i < 3; i++)
                     {
@@ -183,12 +179,12 @@ namespace Straitjacket.Utility.VersionChecker
                     }
                     break;
                 case VersionRecord.VersionState.Unknown:
-                    _ = Logger.LogWarningAsync($"{prefix}{versionRecord.Message(false)}");
+                    _ = Logger.LogWarningAsync($"{versionRecord.Prefix}{versionRecord.Message(false)}");
                     break;
                 case VersionRecord.VersionState.Ahead:
                 case VersionRecord.VersionState.Current:
                 default:
-                    _ = Logger.LogMessageAsync($"{prefix}{versionRecord.Message(false)}");
+                    _ = Logger.LogMessageAsync($"{versionRecord.Prefix}{versionRecord.Message(false)}");
                     break;
             }
         }
