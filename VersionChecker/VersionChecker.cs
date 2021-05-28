@@ -27,7 +27,7 @@ namespace Straitjacket.Utility.VersionChecker
         }
 
         internal static VersionChecker main;
-        internal static VersionChecker Main => main == null ? new GameObject("VersionChecker").AddComponent<VersionChecker>() : main;
+        internal static VersionChecker Main => main ??= new GameObject("VersionChecker").AddComponent<VersionChecker>();
 
         internal Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
         internal IVersionParser VersionParser { get; } = new VersionParser();
