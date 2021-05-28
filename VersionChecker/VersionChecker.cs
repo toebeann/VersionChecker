@@ -14,8 +14,6 @@ namespace Straitjacket.Utility.VersionChecker
 {
     internal class VersionChecker : MonoBehaviour
     {
-        internal const string Version = "1.3.0.1";
-
         internal enum CheckFrequency
         {
             Startup,
@@ -26,178 +24,59 @@ namespace Straitjacket.Utility.VersionChecker
             Never
         }
 
-        internal static VersionChecker main;
-        internal static VersionChecker Main => main ??= new GameObject("VersionChecker").AddComponent<VersionChecker>();
+        private delegate string ApiKeyCommand(string apiKey = null);
 
-        internal Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
-        internal IVersionParser VersionParser { get; } = new VersionParser();
+        public const string Version = "1.3.0.1";
+        private const string VersionCheckerApiKey = "VersionCheckerApiKey";
 
-        internal void Check(string URL, IQMod qMod)
+        private static string apiKey;
+        public static string ApiKey
+        {
+            get => apiKey ??= PlayerPrefs.HasKey(VersionCheckerApiKey) ? PlayerPrefs.GetString(VersionCheckerApiKey) : null;
+            set => apiKey = value;
+        }
+
+        private static VersionChecker main;
+        public static VersionChecker Main => main ??= new GameObject("VersionChecker").AddComponent<VersionChecker>();
+
+        private bool isRunning = false;
+        private bool startupChecked = false;
+        private readonly Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
+        private readonly Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
+
+        public void Check(IQMod qMod, string url)
         {
             if (qMod == null)
+            {
                 throw new ArgumentNullException("qMod");
+            }
 
             if (CheckedVersions.ContainsKey(qMod))
-                return;
-
-            string prefix = qMod.LoadedAssembly == Assembly.GetAssembly(typeof(VersionChecker))
-                ? string.Empty
-                : $"[{qMod.DisplayName}] ";
-
-            if (qMod.ParsedVersion == null)
             {
-                Logger.LogError($"{prefix}There was an error retrieving the current version: QModManager failed to parse.");
                 return;
             }
 
-            string versionProperty = "Version";
-            PropertyInfo versionPropertyInfo = typeof(ModJson).GetProperty(versionProperty);
-
-            var versionRecord = CheckedVersions[qMod] = new VersionRecord
-            {
-                Assembly = qMod.LoadedAssembly,
-                DisplayName = qMod.DisplayName,
-                Colour = GetColour(),
-                URL = URL,
-                CurrentVersion = qMod.ParsedVersion,
-                UpdateAsync = async () =>
-                {
-                    if (!qMod.IsLoaded)
-                        return;
-
-                    if (versionPropertyInfo == null)
-                        throw new InvalidOperationException($"Property {versionProperty} not found in type {typeof(ModJson)}");
-
-                    Version version = await GetLatestVersionAsync<ModJson>(URL, versionPropertyInfo);
-                    CheckedVersions[qMod].LatestVersion = version;
-                }
-            };
-            Logger.LogInfo($"{prefix}Currently running v{qMod.ParsedVersion}.");
+            CheckedVersions[qMod] = new VersionRecord(qMod, url);
         }
 
-        internal void Check(QModGame game, uint modId, IQMod qMod, string URL = null)
+        public void Check(IQMod qMod, QModGame game, uint modId, string url = null)
         {
             if (qMod == null)
+            {
                 throw new ArgumentNullException("qMod");
+            }
 
-            if (CheckedVersions.ContainsKey(qMod))
-                return;
-
-            string prefix = qMod.LoadedAssembly == Assembly.GetAssembly(typeof(VersionChecker))
-                ? string.Empty
-                : $"[{qMod.DisplayName}] ";
-
-            if (qMod.ParsedVersion == null)
+            if (CheckedVersions.TryGetValue(qMod, out VersionRecord record) && record.Game != QModGame.None)
             {
-                Logger.LogError($"{prefix}There was an error retrieving the current version: QModManager failed to parse.");
                 return;
             }
 
-            string versionProperty = "Version";
-            PropertyInfo versionPropertyInfo = typeof(ModJson).GetProperty(versionProperty);
-
-            var versionRecord = CheckedVersions[qMod] = new VersionRecord
-            {
-                Assembly = qMod.LoadedAssembly,
-                DisplayName = qMod.DisplayName,
-                Colour = GetColour(),
-                CurrentVersion = qMod.ParsedVersion,
-                Game = game,
-                ModId = modId,
-                URL = URL
-            };
-            versionRecord.UpdateAsync = async () =>
-            {
-                if (!qMod.IsLoaded)
-                    return;
-
-                string apiKey = string.IsNullOrWhiteSpace(ApiKey)
-                ? (ApiKey = PlayerPrefs.HasKey(VersionCheckerApiKey)
-                    ? PlayerPrefs.GetString(VersionCheckerApiKey)
-                    : null)
-                : ApiKey;
-
-                try
-                {
-                    Version version = await GetLatestVersionAsync(versionRecord, apiKey);
-                    CheckedVersions[qMod].LatestVersion = version;
-                }
-                catch (Exception)
-                {
-                    Version version;
-
-                    if (apiKey != null)
-                    {
-                        try
-                        {
-                            version = await GetLatestVersionAsync(versionRecord);
-                            CheckedVersions[qMod].LatestVersion = version;
-                            return;
-                        }
-                        catch (Exception) { }
-                    }
-
-                    if (URL == null)
-                        throw new InvalidOperationException("Could not retrieve version from Nexus Mods API and no VersionChecker github URL is defined as a fallback.");
-
-                    if (versionPropertyInfo == null)
-                        throw new InvalidOperationException($"Property {versionProperty} not found in type {typeof(ModJson)}");
-
-                    version = await GetLatestVersionAsync<ModJson>(URL, versionPropertyInfo);
-                    CheckedVersions[qMod].LatestVersion = version;
-                }
-            };
+            CheckedVersions[qMod] = new VersionRecord(qMod, game, modId, url);
         }
 
-        internal async Task<Version> GetLatestVersionAsync(string URL)
-        {
-            var text = await Networking.ReadAllTextAsync(URL);
-
-            if (!string.IsNullOrWhiteSpace(text))
-            {
-                return VersionParser.GetVersion(text.Trim());
-            }
-
-            throw new NullReferenceException();
-        }
-
-        internal async Task<Version> GetLatestVersionAsync<TJsonObject>(string URL, PropertyInfo versionPropertyInfo)
-            where TJsonObject : class
-        {
-            if (versionPropertyInfo.PropertyType != typeof(string))
-            {
-                throw new ArgumentException("A property of Type string is required.", "versionProperty");
-            }
-
-            TJsonObject JSON = await Networking.ReadJSONAsync<TJsonObject>(URL);
-            return VersionParser.GetVersion((string)versionPropertyInfo.GetValue(JSON, null));
-        }
-
-        internal async Task<Version> GetLatestVersionAsync(VersionRecord versionRecord, string nexusApiKey = null)
-        {
-            if (nexusApiKey == null)
-            {
-                string url = versionRecord.VersionCheckerAPIModUrl;
-                VersionCheckerAPI.ModJson JSON = await Networking.ReadJSONAsync<VersionCheckerAPI.ModJson>(url);
-                return VersionParser.GetVersion(JSON.Version);
-            }
-            else
-            {
-                string url = versionRecord.NexusAPIModUrl;
-                Dictionary<string, string> headers = new Dictionary<string, string> { ["apikey"] = nexusApiKey };
-                NexusAPI.ModJson JSON = await Networking.ReadJSONAsync<NexusAPI.ModJson>(url, headers);
-
-                if (JSON.Available)
-                    return VersionParser.GetVersion(JSON.Version);
-                else    // if the mod is unavailable on nexus mods, return the current version so the user is not constantly
-                        // bugged to update a mod they can't access
-                    return versionRecord.CurrentVersion;
-            }
-        }
-
-        internal Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
-
+#pragma warning disable IDE0051 // Remove unused private members
         private void Awake()
+#pragma warning restore IDE0051 // Remove unused private members
         {
             if (main != null && main != this)
             {
@@ -215,9 +94,15 @@ namespace Straitjacket.Utility.VersionChecker
             }
         }
 
-        private delegate string ApiKeyCommand(string apiKey = null);
-        private const string VersionCheckerApiKey = "VersionCheckerApiKey";
-        internal static string ApiKey;
+        private void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (!isRunning)
+            {
+                isRunning = true;
+                _ = CheckVersionsAsyncLoop();
+                SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
+            }
+        }
 
         private string SetApiKey(string apiKey = null)
         {
@@ -246,46 +131,10 @@ namespace Straitjacket.Utility.VersionChecker
             }
         }
 
-        private void OnDestroy() => StopAllCoroutines();
-
-        private bool IsRunning = false;
-        private void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            if (!IsRunning)
-            {
-                IsRunning = true;
-                _ = CheckVersionsAsyncLoop();
-                SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
-            }
-        }
-
-        private static readonly Color[] assemblyColours = new Color[]
-        {
-            new Color(0, 1, 1), new Color(.65f, .165f, .165f), new Color(0, .5f, 0), new Color(.68f, .85f, .9f), new Color(0, .5f, .5f),
-            new Color(0, 1, 0), new Color(1, 0, 1), new Color(.5f, .5f, 0), new Color(1, .65f, 0), new Color(1, 1, 0)
-        };
-        private static List<Color> assignedColours = new List<Color>();
-        private static Color GetColour()
-        {
-            var availableColours = assemblyColours.Except(assignedColours).Union(assignedColours.Except(assignedColours));
-            if (!availableColours.Any())
-            {
-                var result = assignedColours.GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
-                while (result.Max(x => x.Value) != result.Min(x => x.Value))
-                {
-                    result = result.Except(result.Where(x => x.Value == result.Max(y => y.Value)))
-                        .ToDictionary(x => x.Key, x => x.Value);
-                }
-                availableColours = result.Keys.Distinct();
-            }
-
-            var colour = availableColours.ElementAt(UnityEngine.Random.Range(0, availableColours.Count() - 1));
-            assignedColours.Add(colour);
-            return colour;
-        }
-
         private async Task CheckVersionsAsyncLoop()
         {
+            await Task.Delay(500);
+
             while (true)
             {
                 _ = Logger.LogDebugAsync("Awaiting next check...");
@@ -345,7 +194,6 @@ namespace Straitjacket.Utility.VersionChecker
             }
         }
 
-        private bool startupChecked = false;
         private async Task ShouldCheckVersionsAsync()
         {
             if (Config.Frequency == CheckFrequency.Startup && !startupChecked)
@@ -386,10 +234,10 @@ namespace Straitjacket.Utility.VersionChecker
                     await Task.Delay(60000);
             }
         }
-        private async Task SpecificDateTimeAsync(DateTime dateTime, int delay = 1000)
+        private async Task SpecificDateTimeAsync(DateTime dateTime, int millisecondsInterval = 1000)
         {
             while (DateTime.UtcNow < dateTime)
-                await Task.Delay(delay);
+                await Task.Delay(millisecondsInterval);
         }
 
         private async Task NoWaitScreenAsync()
