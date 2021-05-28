@@ -1,5 +1,4 @@
 ﻿using QModManager.API;
-using QModManager.Utility;
 using SMLHelper.V2.Handlers;
 using System;
 using System.Collections.Generic;
