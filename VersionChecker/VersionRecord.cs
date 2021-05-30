@@ -70,7 +70,7 @@ namespace Straitjacket.Utility.VersionChecker
             : $"https://api.nexusmods.com/v1/games/{NexusDomainName}/mods/{ModId}.json";
         public string VersionCheckerAPIModUrl => Game == QModGame.None || ModId == 0
             ? null
-            : $"https://mods.vc.api.straitjacket.software/v1/games/{NexusDomainName}/mods/{ModId}.json";
+            : $"https://mods.vc.api.straitjacket.software/v1/games/{NexusDomainName}/mods/{ModId}/{DisplayName}.json";
 
         public VersionState State => CurrentVersion switch
         {
