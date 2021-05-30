@@ -43,19 +43,19 @@ namespace Straitjacket.Utility.VersionChecker
         {
 #if SUBNAUTICA
             var url = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_SUBNAUTICA.json";
-            VersionChecker.Check(QModGame.Subnautica, 467, QModServices.Main.GetMyMod(), url);
+            VersionChecker.Main.Check(QModServices.Main.GetMyMod(), QModGame.Subnautica, 467, url);
 #elif BELOWZERO
             var url = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_BELOWZERO.json";
-            VersionChecker.Check(QModGame.BelowZero, 66, QModServices.Main.GetMyMod(), url);
+            VersionChecker.Main.Check(QModServices.Main.GetMyMod(), QModGame.BelowZero, 66, url);
 #endif
         }
 
         private static void InitialiseQModManagerVersionChecks()
         {
 #if SUBNAUTICA
-            VersionChecker.Check(QModGame.Subnautica, 201, new QModManagerQMod());
+            VersionChecker.Main.Check(new QModManagerQMod(), QModGame.Subnautica, 201);
 #elif BELOWZERO
-            VersionChecker.Check(QModGame.BelowZero, 1, new QModManagerQMod());
+            VersionChecker.Main.Check(new QModManagerQMod(), QModGame.BelowZero, 1);
 #endif
         }
 
@@ -110,7 +110,7 @@ namespace Straitjacket.Utility.VersionChecker
                             {
                                 uint modId = uint.Parse(modIdString, CultureInfo.InvariantCulture.NumberFormat);
 
-                                VersionChecker.Check(game, modId, qMod, modJson.VersionChecker?.LatestVersionURL);
+                                VersionChecker.Main.Check(qMod, game, modId, modJson.VersionChecker?.LatestVersionURL);
                                 break;
                             }
                             catch (ArgumentNullException e)
@@ -133,7 +133,7 @@ namespace Straitjacket.Utility.VersionChecker
 
                         if (modJson.VersionChecker != null)
                         {
-                            VersionChecker.Check(modJson.VersionChecker.LatestVersionURL, qMod);
+                            VersionChecker.Main.Check(qMod, modJson.VersionChecker.LatestVersionURL);
                         }
                     }
                     catch (Exception e)
