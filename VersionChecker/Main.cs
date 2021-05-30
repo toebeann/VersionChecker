@@ -115,17 +115,17 @@ namespace Straitjacket.Utility.VersionChecker
                             }
                             catch (ArgumentNullException e)
                             {
-                                Logger.LogError($"Skipping NexusId: mod ID is null: {modIdString}");
+                                Logger.LogError($"[{modJson.DisplayName}] Skipping NexusId: mod ID is null: {modIdString}");
                                 Logger.LogError(e.Message);
                             }
                             catch (FormatException e)
                             {
-                                Logger.LogError($"Skipping NexusId: mod ID is not a valid unsigned integer: {modIdString}");
+                                Logger.LogError($"[{modJson.DisplayName}] Skipping NexusId: mod ID is not a valid unsigned integer: {modIdString}");
                                 Logger.LogError(e.Message);
                             }
                             catch (OverflowException e)
                             {
-                                Logger.LogError($"Skipping NexusId: mod ID is outside the valid range for an unsigned integer: " +
+                                Logger.LogError($"[{modJson.DisplayName}] Skipping NexusId: mod ID is outside the valid range for an unsigned integer: " +
                                     $"{modIdString}");
                                 Logger.LogError(e.Message);
                             }
