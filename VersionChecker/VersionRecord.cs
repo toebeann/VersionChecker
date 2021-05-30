@@ -49,6 +49,7 @@ namespace Straitjacket.Utility.VersionChecker
 
         public Assembly Assembly => QMod.LoadedAssembly;
         public string DisplayName => QMod.DisplayName;
+        private string DisplayNameEncoded => WebUtility.UrlEncode(DisplayName);
 
         private Color? colour;
         public Color Colour => colour ??= GetColour();
@@ -58,6 +59,7 @@ namespace Straitjacket.Utility.VersionChecker
         public Version LatestVersion { get; private set; }
         public QModGame Game { get; set; } = QModGame.None;
         public uint ModId { get; }
+        private string ModIdEncoded => WebUtility.UrlEncode(ModId.ToString());
 
         public string NexusDomainName => Game switch
         {
@@ -70,7 +72,7 @@ namespace Straitjacket.Utility.VersionChecker
             : $"https://api.nexusmods.com/v1/games/{NexusDomainName}/mods/{ModId}.json";
         public string VersionCheckerAPIModUrl => Game == QModGame.None || ModId == 0
             ? null
-            : $"https://mods.vc.api.straitjacket.software/v1/games/{NexusDomainName}/mods/{ModId}.json";
+            : $"https://mods.vc.api.straitjacket.software/v1/games/{NexusDomainName}/mods/{ModIdEncoded}/{DisplayNameEncoded}.json";
 
         public VersionState State => CurrentVersion switch
         {

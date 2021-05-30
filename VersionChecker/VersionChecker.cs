@@ -25,7 +25,7 @@ namespace Straitjacket.Utility.VersionChecker
 
         private delegate string ApiKeyCommand(string apiKey = null);
 
-        public const string Version = "1.3.0.1";
+        public const string Version = "1.3.0.2";
         private const string VersionCheckerApiKey = "VersionCheckerApiKey";
 
         private static string apiKey;

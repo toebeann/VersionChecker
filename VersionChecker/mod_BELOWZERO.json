@@ -2,7 +2,7 @@
     "Id": "VersionChecker",
     "DisplayName": "VersionChecker",
     "Author": "Tobey Blaber",
-    "Version": "1.3.0.1",
+    "Version": "1.3.0.2",
     "AssemblyName": "Straitjacket.Utility.VersionChecker.dll",
     "Enable": true,
     "Game": "BelowZero",
