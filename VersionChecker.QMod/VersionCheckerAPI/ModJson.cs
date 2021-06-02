@@ -4,7 +4,7 @@ using Oculus.Newtonsoft.Json;
 using Newtonsoft.Json;
 #endif
 
-namespace Straitjacket.Utility.VersionCheckerAPI
+namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod.VersionCheckerAPI
 {
     internal class ModJson
     {

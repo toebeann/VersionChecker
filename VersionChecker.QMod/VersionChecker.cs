@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Logger = BepInEx.Subnautica.Logger;
 
-namespace Straitjacket.Utility.VersionChecker
+namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
     internal class VersionChecker : MonoBehaviour
     {

@@ -4,7 +4,7 @@ using Oculus.Newtonsoft.Json;
 using Newtonsoft.Json;
 #endif
 
-namespace Straitjacket.Utility
+namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
     /// <summary>
     /// A bare-bones definition of a mod.json file for retrieving the Version property.

@@ -3,11 +3,11 @@
     "DisplayName": "VersionChecker",
     "Author": "Tobey Blaber",
     "Version": "1.3.0.2",
-    "AssemblyName": "Straitjacket.Utility.VersionChecker.dll",
+    "AssemblyName": "Straitjacket.Subnautica.Mods.VersionChecker.QMod.dll",
     "Enable": true,
     "Game": "BelowZero",
     "VersionDependencies": {
-        "SMLHelper": "2.9"
+        "SMLHelper": "2.9.7"
     },
     "VersionChecker": {
         "LatestVersionURL": "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_BELOWZERO.json"

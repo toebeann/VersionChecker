@@ -12,7 +12,7 @@ using System.Globalization;
 using System.IO;
 using Logger = BepInEx.Subnautica.Logger;
 
-namespace Straitjacket.Utility.VersionChecker
+namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
     /// <summary>
     /// QModManager entry patcher

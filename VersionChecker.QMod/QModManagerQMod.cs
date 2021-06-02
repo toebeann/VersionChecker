@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using QModManager.API;
 
-namespace Straitjacket.Utility
+namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
     internal class QModManagerQMod : IQMod
     {

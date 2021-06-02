@@ -14,8 +14,10 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Logger = BepInEx.Subnautica.Logger;
 
-namespace Straitjacket.Utility.VersionChecker
+namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
+    using Utility;
+
     internal class VersionRecord
     {
         public enum VersionState { Unknown, Outdated, Current, Ahead }

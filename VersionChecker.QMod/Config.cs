@@ -2,7 +2,7 @@
 using SMLHelper.V2.Options.Attributes;
 using System;
 
-namespace Straitjacket.Utility.VersionChecker
+namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
     [Menu("VersionChecker", LoadOn = MenuAttribute.LoadEvents.MenuOpened | MenuAttribute.LoadEvents.MenuRegistered)]
     internal class Config : ConfigFile
