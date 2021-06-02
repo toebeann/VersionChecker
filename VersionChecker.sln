@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Straitjacket.Subnautica.Mod
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "BepInEx.Subnautica.Logger", "BepInEx.Subnautica.Logger\Logger\BepInEx.Subnautica.Logger.shproj", "{32F6ED8C-0F9A-409D-A404-EE068789C72F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Straitjacket.Subnautica.Mods.VersionChecker", "VersionChecker\Straitjacket.Subnautica.Mods.VersionChecker.csproj", "{79B95E8F-3AF1-423F-A583-C90929099352}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		BepInEx.Subnautica.Logger\Logger\Logger.projitems*{32f6ed8c-0f9a-409d-a404-ee068789c72f}*SharedItemsImports = 13
@@ -21,6 +23,10 @@ Global
 		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.BELOWZERO|Any CPU.Build.0 = BELOWZERO|Any CPU
 		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.SUBNAUTICA|Any CPU.ActiveCfg = SUBNAUTICA|Any CPU
 		{44F05B7E-E21A-49B1-9523-3EC9E22F9E6D}.SUBNAUTICA|Any CPU.Build.0 = SUBNAUTICA|Any CPU
+		{79B95E8F-3AF1-423F-A583-C90929099352}.BELOWZERO|Any CPU.ActiveCfg = BELOWZERO|Any CPU
+		{79B95E8F-3AF1-423F-A583-C90929099352}.BELOWZERO|Any CPU.Build.0 = BELOWZERO|Any CPU
+		{79B95E8F-3AF1-423F-A583-C90929099352}.SUBNAUTICA|Any CPU.ActiveCfg = SUBNAUTICA|Any CPU
+		{79B95E8F-3AF1-423F-A583-C90929099352}.SUBNAUTICA|Any CPU.Build.0 = SUBNAUTICA|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

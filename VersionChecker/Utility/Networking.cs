@@ -7,14 +7,14 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Straitjacket.Utility
+namespace Straitjacket.Subnautica.Mods.VersionChecker.Utility
 {
-    internal class Networking
+    internal static class Networking
     {
         internal static async Task<string> ReadAllTextAsync(string URL, Dictionary<string, string> headers = null)
         {
             using var client = new WebClient();
-            if (headers != null)
+            if (headers is Dictionary<string, string>)
             {
                 foreach (var header in headers)
                 {
