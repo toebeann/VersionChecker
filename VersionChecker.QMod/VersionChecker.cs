@@ -24,7 +24,6 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
         private delegate string ApiKeyCommand(string apiKey = null);
 
-        public const string Version = "1.3.0.2";
         private const string VersionCheckerApiKey = "VersionCheckerApiKey";
 
         private static string apiKey;
