@@ -73,7 +73,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
                 {
                     try
                     {
-                        var modJson = JsonConvert.DeserializeObject<ModJson>(File.ReadAllText(modJsonPath));
+                        var modJson = JsonConvert.DeserializeObject<QModJson>(File.ReadAllText(modJsonPath));
                         if (!modJson.Enable)
                         {
                             Logger.LogInfo($"Skipping disabled mod: {modJson.DisplayName}");

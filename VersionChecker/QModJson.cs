@@ -8,7 +8,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
 {
     using Interface;
 
-    internal class ModJson : IQModJson
+    internal class QModJson : IQModJson
     {
         [JsonRequired]
         public string Version { get; set; }

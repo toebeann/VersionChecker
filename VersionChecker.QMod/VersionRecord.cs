@@ -196,7 +196,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
         private async Task<Version> GetLatestVersionAsync()
         {
-            ModJson JSON = await Networking.ReadJsonAsync<ModJson>(URL);
+            QModJson JSON = await Networking.ReadJsonAsync<QModJson>(URL);
             return VersionParser.GetVersion(JSON.Version);
         }
 
