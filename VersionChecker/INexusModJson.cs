@@ -1,6 +1,6 @@
 ﻿namespace Straitjacket.Subnautica.Mods.VersionChecker
 {
-    internal interface INexusModJson : IUpdatable, IUpdatableAsync
+    internal interface INexusModJson
     {
         int ModId { get; }
         int GameId { get; }
