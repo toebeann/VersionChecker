@@ -11,5 +11,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
         public CheckFrequency Frequency { get; set; } = CheckFrequency.Hourly;
 
         public DateTime LastChecked { get; set; }
+
+        public string NexusApiKey { get; set; }
     }
 }

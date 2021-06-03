@@ -21,15 +21,6 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
     {
         private delegate string ApiKeyCommand(string apiKey = null);
 
-        private const string VersionCheckerApiKey = "VersionCheckerApiKey";
-
-        private static string apiKey;
-        public static string ApiKey
-        {
-            get => apiKey ??= VersionRecord.ApiKey = PlayerPrefs.HasKey(VersionCheckerApiKey) ? PlayerPrefs.GetString(VersionCheckerApiKey) : null;
-            set => apiKey = VersionRecord.ApiKey = value;
-        }
-
         private static VersionChecker main;
         public static VersionChecker Main => main ??= new GameObject("VersionChecker").AddComponent<VersionChecker>();
 
@@ -102,6 +93,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
                 SceneManager.sceneLoaded += SceneManager_sceneLoaded;
 
                 ConsoleCommandsHandler.Main.RegisterConsoleCommand<ApiKeyCommand>("apikey", SetApiKey);
+                VersionRecord.ApiKey = Config.NexusApiKey;
             }
         }
 
@@ -119,10 +111,9 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
         {
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                if (PlayerPrefs.HasKey(VersionCheckerApiKey))
+                if (!string.IsNullOrWhiteSpace(Config.NexusApiKey))
                 {
-                    apiKey = PlayerPrefs.GetString(VersionCheckerApiKey);
-                    return $"Nexus API key ending in {apiKey.Substring(Math.Max(0, apiKey.Length - 4))} is set.";
+                    return $"Nexus API key ending in {Config.NexusApiKey.Substring(Math.Max(0, apiKey.Length - 4))} is set.";
                 }
                 else
                 {
@@ -131,13 +122,16 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
             }
             else if (apiKey.ToLowerInvariant() == "unset")
             {
-                PlayerPrefs.DeleteKey(VersionCheckerApiKey);
+                VersionRecord.ApiKey = Config.NexusApiKey = null;
+                Config.LastChecked = default;
+                Config.Save();
                 return "Nexus API key unset.";
             }
             else
             {
-                PlayerPrefs.SetString(VersionCheckerApiKey, ApiKey = apiKey.Trim());
+                VersionRecord.ApiKey = Config.NexusApiKey = apiKey.Trim();
                 Config.LastChecked = default;
+                Config.Save();
                 return "Nexus API key set.";
             }
         }

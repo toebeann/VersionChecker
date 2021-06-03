@@ -6,5 +6,6 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
     {
         public CheckFrequency Frequency { get; }
         public DateTime LastChecked { get; }
+        public string NexusApiKey { get; }
     }
 }
