@@ -1,18 +1,17 @@
 ﻿using System.Resources;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Straitjacket.Subnautica.Mods.VersionChecker;
+using VersionChecker = Straitjacket.Subnautica.Mods.VersionChecker;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Straitjacket.Subnautica.Mods.VersionChecker")]
+[assembly: AssemblyTitle("Straitjacket.Subnautica.Mods.VersionChecker.QMod")]
 [assembly: AssemblyDescription("Version checking utility for Subnautica mods")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Straitjacket Software")]
-[assembly: AssemblyProduct("VersionChecker")]
-[assembly: AssemblyCopyright("Copyright ©  2021")]
+[assembly: AssemblyProduct("VersionChecker.QMod")]
+[assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -22,7 +21,7 @@ using Straitjacket.Subnautica.Mods.VersionChecker;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("79b95e8f-3af1-423f-a583-c90929099352")]
+[assembly: Guid("44f05b7e-e21a-49b1-9523-3ec9e22f9e6d")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -34,8 +33,6 @@ using Straitjacket.Subnautica.Mods.VersionChecker;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion(Constants.Version)]
-[assembly: AssemblyFileVersion(Constants.Version)]
+[assembly: AssemblyVersion(VersionChecker.Constants.Version)]
+[assembly: AssemblyFileVersion(VersionChecker.Constants.Version)]
 [assembly: NeutralResourcesLanguage("en-GB")]
-
-[assembly: InternalsVisibleTo("Straitjacket.Subnautica.Mods.VersionChecker.QMod")]
