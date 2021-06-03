@@ -49,9 +49,11 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CheckFrequency.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="ExtensionMethods\VersionExtensionMethods.cs" />
     <Compile Include="Game.cs" />
+    <Compile Include="IConfig.cs" />
     <Compile Include="INexusModJson.cs" />
     <Compile Include="IUpdatable.cs" />
     <Compile Include="QModJson.cs" />

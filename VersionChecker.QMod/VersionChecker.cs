@@ -19,16 +19,6 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
     internal class VersionChecker : MonoBehaviour
     {
-        internal enum CheckFrequency
-        {
-            Startup,
-            Hourly,
-            Daily,
-            Weekly,
-            Monthly,
-            Never
-        }
-
         private delegate string ApiKeyCommand(string apiKey = null);
 
         private const string VersionCheckerApiKey = "VersionCheckerApiKey";
