@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace Straitjacket.Subnautica.Mods.VersionChecker.VersionCheckerAPI
 {
-    using Interface;
     using Utility;
 
     internal class ModJson : MarshalByRefObject, INexusModJson

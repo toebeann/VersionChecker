@@ -51,19 +51,15 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="ExtensionMethods\VersionExtensionMethods.cs" />
+    <Compile Include="Game.cs" />
+    <Compile Include="INexusModJson.cs" />
+    <Compile Include="IUpdatable.cs" />
     <Compile Include="QModJson.cs" />
     <Compile Include="NexusAPI\ModJson.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utility\Networking.cs" />
     <Compile Include="VersionCheckerAPI\ModJson.cs" />
     <Compile Include="VersionRecord.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\VersionChecker.Interface\Straitjacket.Subnautica.Mods.VersionChecker.Interface.csproj">
-      <Project>{32ffa1c8-c3c7-42f3-ac20-3910090264ba}</Project>
-      <Name>Straitjacket.Subnautica.Mods.VersionChecker.Interface</Name>
-      <Private>False</Private>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

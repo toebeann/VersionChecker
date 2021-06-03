@@ -80,13 +80,10 @@
     <None Include="mod_SUBNAUTICA.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\VersionChecker.Interface\Straitjacket.Subnautica.Mods.VersionChecker.Interface.csproj">
-      <Project>{32ffa1c8-c3c7-42f3-ac20-3910090264ba}</Project>
-      <Name>Straitjacket.Subnautica.Mods.VersionChecker.Interface</Name>
-    </ProjectReference>
     <ProjectReference Include="..\VersionChecker\Straitjacket.Subnautica.Mods.VersionChecker.csproj">
       <Project>{79b95e8f-3af1-423f-a583-c90929099352}</Project>
       <Name>Straitjacket.Subnautica.Mods.VersionChecker</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="..\BepInEx.Subnautica.Logger\Logger\Logger.projitems" Label="Shared" />

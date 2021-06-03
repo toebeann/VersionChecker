@@ -1,4 +1,4 @@
-﻿namespace Straitjacket.Subnautica.Mods.VersionChecker.Interface
+﻿namespace Straitjacket.Subnautica.Mods.VersionChecker
 {
     public enum Game
     {

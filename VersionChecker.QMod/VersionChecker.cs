@@ -240,7 +240,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
             switch (record.State)
             {
-                case Interface.IVersionRecord.VersionState.Outdated:
+                case VersionRecord.VersionState.Outdated:
                     _ = Logger.LogWarningAsync($"{record.Prefix}{record.Message(false)}");
 
                     for (var i = 0; i < 3; i++)
@@ -252,11 +252,11 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
                             await Task.WhenAll(Task.Delay(5000), NoWaitScreenAsync());
                     }
                     break;
-                case Interface.IVersionRecord.VersionState.Unknown:
+                case VersionRecord.VersionState.Unknown:
                     _ = Logger.LogWarningAsync($"{record.Prefix}{record.Message(false)}");
                     break;
-                case Interface.IVersionRecord.VersionState.Ahead:
-                case Interface.IVersionRecord.VersionState.Current:
+                case VersionRecord.VersionState.Ahead:
+                case VersionRecord.VersionState.Current:
                 default:
                     _ = Logger.LogMessageAsync($"{record.Prefix}{record.Message(false)}");
                     break;

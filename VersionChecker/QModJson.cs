@@ -6,9 +6,7 @@ using Newtonsoft.Json;
 
 namespace Straitjacket.Subnautica.Mods.VersionChecker
 {
-    using Interface;
-
-    internal class QModJson : IQModJson
+    internal class QModJson
     {
         [JsonRequired]
         public string Version { get; set; }
@@ -28,17 +26,13 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
         [JsonProperty]
         public NexusIdOptions NexusId { get; set; } = null;
 
-        IQModJson.IVersionCheckerOptions IQModJson.VersionChecker => VersionChecker;
-
-        IQModJson.INexusIdOptions IQModJson.NexusId => NexusId;
-
-        public class VersionCheckerOptions : IQModJson.IVersionCheckerOptions
+        public class VersionCheckerOptions
         {
             [JsonRequired]
             public string LatestVersionURL { get; set; }
         }
 
-        public class NexusIdOptions : IQModJson.INexusIdOptions
+        public class NexusIdOptions
         {
             [JsonProperty(DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
             public string Subnautica { get; set; } = null;

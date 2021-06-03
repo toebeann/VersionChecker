@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Straitjacket.Subnautica.Mods.VersionChecker.Interface
+namespace Straitjacket.Subnautica.Mods.VersionChecker
 {
     internal interface IUpdatable
     {

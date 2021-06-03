@@ -6,14 +6,15 @@ using System.Globalization;
 namespace Straitjacket.Subnautica.Mods.VersionChecker
 {
     using ExtensionMethods;
-    using Interface;
     using Utility;
 
-    internal class VersionRecord : IVersionRecord
+    internal class VersionRecord
     {
+        public enum VersionState { Unknown, Outdated, Current, Ahead }
+
         internal static string ApiKey { get; set; }
 
-        public IQModJson QModJson { get; set; }
+        public QModJson QModJson { get; set; }
 
         private Version currentVersion;
         public virtual Version CurrentVersion => currentVersion switch
@@ -54,12 +55,12 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
             _ => throw new InvalidOperationException($"Could not parse Nexus domain name for Game: {Game}")
         };
 
-        public IVersionRecord.VersionState State => CurrentVersion switch
+        public VersionState State => CurrentVersion switch
         {
-            Version current when LatestVersion is Version latest && current < latest => IVersionRecord.VersionState.Outdated,
-            Version current when LatestVersion is Version latest && current > latest => IVersionRecord.VersionState.Ahead,
-            Version _ when LatestVersion is Version => IVersionRecord.VersionState.Current,
-            _ => IVersionRecord.VersionState.Unknown
+            Version current when LatestVersion is Version latest && current < latest => VersionState.Outdated,
+            Version current when LatestVersion is Version latest && current > latest => VersionState.Ahead,
+            Version _ when LatestVersion is Version => VersionState.Current,
+            _ => VersionState.Unknown
         };
 
         public string Prefix => QModJson.Id switch
@@ -68,19 +69,19 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
             _ => $"[{QModJson.DisplayName}] "
         };
 
-        public VersionRecord(IQModJson qModJson)
+        public VersionRecord(QModJson qModJson)
         {
             QModJson = qModJson;
         }
 
         public virtual string Message(bool splitLines = false) => State switch
         {
-            IVersionRecord.VersionState.Ahead => $"Currently running v{Current}.{(splitLines ? Environment.NewLine : " ")}" +
-                                                 $"The latest release version is v{Latest}. We are ahead.",
-            IVersionRecord.VersionState.Current => $"Currently running v{Current}.{(splitLines ? Environment.NewLine : " ")}" +
-                                                   $"The latest release version is v{Latest}. Up to date.",
-            IVersionRecord.VersionState.Outdated => $"A new version has been released: v{Latest}.{(splitLines ? Environment.NewLine : " ")}" +
-                                                    $"Currently running v{Current}. Please update at your earliest convenience!",
+            VersionState.Ahead => $"Currently running v{Current}.{(splitLines ? Environment.NewLine : " ")}" +
+                                  $"The latest release version is v{Latest}. We are ahead.",
+            VersionState.Current => $"Currently running v{Current}.{(splitLines ? Environment.NewLine : " ")}" +
+                                    $"The latest release version is v{Latest}. Up to date.",
+            VersionState.Outdated => $"A new version has been released: v{Latest}.{(splitLines ? Environment.NewLine : " ")}" +
+                                     $"Currently running v{Current}. Please update at your earliest convenience!",
             _ => "Could not compare versions."
         };
 
