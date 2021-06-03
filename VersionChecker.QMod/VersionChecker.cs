@@ -17,10 +17,10 @@ using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
+    using NexusAPI;
+
     internal class VersionChecker : MonoBehaviour
     {
-        private delegate string ApiKeyCommand(string apiKey = null);
-
         private static VersionChecker main;
         public static VersionChecker Main => main ??= new GameObject("VersionChecker").AddComponent<VersionChecker>();
 
@@ -92,8 +92,8 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
                 SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
                 SceneManager.sceneLoaded += SceneManager_sceneLoaded;
 
-                ConsoleCommandsHandler.Main.RegisterConsoleCommand<ApiKeyCommand>("apikey", SetApiKey);
-                VersionRecord.ApiKey = Config.NexusApiKey;
+                ConsoleCommandsHandler.Main.RegisterConsoleCommand<Func<string, string>>("apikey", SetApiKey);
+                Validate.Main.ApiKey = Config.NexusApiKey;
             }
         }
 
@@ -122,17 +122,32 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
             }
             else if (apiKey.ToLowerInvariant() == "unset")
             {
-                VersionRecord.ApiKey = Config.NexusApiKey = null;
+                Validate.Main.ApiKey = Config.NexusApiKey = null;
                 Config.LastChecked = default;
                 Config.Save();
                 return "Nexus API key unset.";
             }
             else
             {
-                VersionRecord.ApiKey = Config.NexusApiKey = apiKey.Trim();
+                _ = ValidateApiKey(apiKey);
+                return "Validating...";
+            }
+        }
+
+        private async Task ValidateApiKey(string apiKey)
+        {
+            try
+            {
+                Validate.Main.ApiKey = apiKey.Trim();
+                var user = await Validate.GetAsync();
+                Config.NexusApiKey = Validate.Main.ApiKey;
                 Config.LastChecked = default;
                 Config.Save();
-                return "Nexus API key set.";
+                ErrorMessage.AddMessage($"Nexus API key for user {user.Username} set.");
+            }
+            catch
+            {
+                ErrorMessage.AddError("Please enter a valid API key.");
             }
         }
 
