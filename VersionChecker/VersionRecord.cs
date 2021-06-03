@@ -2,7 +2,6 @@
 using System;
 using System.Threading.Tasks;
 using System.Globalization;
-using System.Net;
 
 namespace Straitjacket.Subnautica.Mods.VersionChecker
 {
@@ -14,8 +13,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
     {
         internal static string ApiKey { get; set; }
 
-        public QModJson QModJson { get; }
-        IQModJson IVersionRecord.QModJson => QModJson;
+        public IQModJson QModJson { get; set; }
 
         private Version currentVersion;
         public virtual Version CurrentVersion => currentVersion switch
@@ -70,7 +68,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
             _ => $"[{QModJson.DisplayName}] "
         };
 
-        public VersionRecord(QModJson qModJson)
+        public VersionRecord(IQModJson qModJson)
         {
             QModJson = qModJson;
         }

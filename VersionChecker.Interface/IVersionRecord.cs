@@ -6,7 +6,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.Interface
     {
         public enum VersionState { Unknown, Outdated, Current, Ahead }
 
-        IQModJson QModJson { get; }
+        IQModJson QModJson { get; set; }
         Version CurrentVersion { get; }
         Version LatestVersion { get; }
         string Current { get; }
