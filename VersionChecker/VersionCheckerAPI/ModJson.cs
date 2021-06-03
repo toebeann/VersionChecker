@@ -34,29 +34,13 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.VersionCheckerAPI
         [JsonProperty(PropertyName = "domain_name")]
         public string DomainName { get; set; }
 
-        public void Update() => UpdateAsync().Wait();
-
-        public async Task UpdateAsync()
-        {
-            var modJson = await GetAsync(DomainName, ModId, Name);
-            ModId = modJson.ModId;
-            GameId = modJson.GameId;
-            Name = modJson.Name;
-            Version = modJson.Version;
-            Status = modJson.Status;
-            Available = modJson.Available;
-        }
-
-        public static ModJson Get(string domain, int id, string name)
-            => GetAsync(domain, id, name).Result;
-
         public static async Task<ModJson> GetAsync(string domain, int id, string name)
             => await Networking.ReadJsonAsync<ModJson>(GetUrl(domain, id, name));
 
         private static string GetUrl(string domain, int id, string name)
             => "http://mods.vc.api.straitjacket.software/v1/" +
                $"games/{WebUtility.UrlEncode(domain)}/" +
-               $"mods/{WebUtility.UrlEncode(id.ToString())}" +
+               $"mods/{WebUtility.UrlEncode(id.ToString())}/" +
                $"{WebUtility.UrlEncode(name)}.json";
     }
 }

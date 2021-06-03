@@ -34,32 +34,13 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.NexusAPI
         [JsonProperty(PropertyName = "domain_name")]
         public string DomainName { get; set; }
 
-        [JsonIgnore]
-        public string ApiKey { get; set; }
-
-        public void Update() => UpdateAsync().Wait();
-
-        public async Task UpdateAsync()
-        {
-            var modJson = await GetAsync(DomainName, ModId, ApiKey);
-            ModId = modJson.ModId;
-            GameId = modJson.GameId;
-            Name = modJson.Name;
-            Version = modJson.Version;
-            Status = modJson.Status;
-            Available = modJson.Available;
-        }
-
-        public static ModJson Get(string domain, int id, string apiKey)
-            => GetAsync(domain, id, apiKey).Result;
-
         public static async Task<ModJson> GetAsync(string domain, int id, string apiKey)
             => await Networking.ReadJsonAsync<ModJson>(GetUrl(domain, id),
                 new Dictionary<string, string> { ["apikey"] = apiKey });
 
         private static string GetUrl(string domain, int id)
             => "https://api.nexusmods.com/v1/" +
-            $"games/{WebUtility.UrlEncode(domain)}" +
+            $"games/{WebUtility.UrlEncode(domain)}/" +
             $"mods/{WebUtility.UrlEncode(id.ToString())}.json";
     }
 }
