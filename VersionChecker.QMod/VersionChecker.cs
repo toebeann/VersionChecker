@@ -65,7 +65,9 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
                 throw new ArgumentNullException("qModJson");
             }
 
-            if (qModJson.NexusId is null && qModJson.VersionChecker is null)
+            if (string.IsNullOrWhiteSpace(qModJson.NexusId?.Subnautica)
+                && string.IsNullOrWhiteSpace(qModJson.NexusId?.BelowZero)
+                && string.IsNullOrWhiteSpace(qModJson.VersionChecker?.LatestVersionURL))
             {
                 return;
             }
@@ -232,7 +234,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
         private async Task PrintVersionInfoAsync(VersionRecord record)
         {
-            if (record.QModJson.NexusId is null && record.QModJson.VersionChecker is null)
+            if (record.NexusModId < 0 && string.IsNullOrWhiteSpace(record.QModJson.VersionChecker?.LatestVersionURL))
             {
                 return;
             }

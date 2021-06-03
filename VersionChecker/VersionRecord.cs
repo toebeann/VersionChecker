@@ -33,17 +33,17 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
 
         public Game Game => Paths.ProcessName switch
         {
-            "Subnautica" when QModJson.NexusId.Subnautica is string => Game.Subnautica,
-            "Subnautica" when QModJson.NexusId.BelowZero is string => Game.BelowZero,
-            "SubnauticaZero" when QModJson.NexusId.BelowZero is string => Game.BelowZero,
-            "SubnauticaZero" when QModJson.NexusId.Subnautica is string => Game.Subnautica,
+            "Subnautica" when QModJson.NexusId?.Subnautica is string => Game.Subnautica,
+            "Subnautica" when QModJson.NexusId?.BelowZero is string => Game.BelowZero,
+            "SubnauticaZero" when QModJson.NexusId?.BelowZero is string => Game.BelowZero,
+            "SubnauticaZero" when QModJson.NexusId?.Subnautica is string => Game.Subnautica,
             _ => Game.Unknown
         };
 
         public int NexusModId => Game switch
         {
-            Game.Subnautica => int.Parse(QModJson.NexusId.Subnautica, CultureInfo.InvariantCulture.NumberFormat),
-            Game.BelowZero => int.Parse(QModJson.NexusId.BelowZero, CultureInfo.InvariantCulture.NumberFormat),
+            Game.Subnautica => int.Parse(QModJson.NexusId?.Subnautica, CultureInfo.InvariantCulture.NumberFormat),
+            Game.BelowZero => int.Parse(QModJson.NexusId?.BelowZero, CultureInfo.InvariantCulture.NumberFormat),
             _ => -1
         };
 
@@ -88,12 +88,12 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
 
         public virtual async Task UpdateAsync()
         {
-            if (!QModJson.Enable || (QModJson.NexusId is null && QModJson.VersionChecker is null))
+            if (!QModJson.Enable || (NexusModId < 0 && string.IsNullOrWhiteSpace(QModJson.VersionChecker?.LatestVersionURL)))
             {
                 return;
             }
 
-            if (NexusModId < 0 && !string.IsNullOrWhiteSpace(QModJson.VersionChecker.LatestVersionURL))
+            if (NexusModId < 0 && !string.IsNullOrWhiteSpace(QModJson.VersionChecker?.LatestVersionURL))
             {
                 LatestVersion = await GetLatestVersionAsync();
                 return;
@@ -114,7 +114,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(QModJson.VersionChecker.LatestVersionURL))
+            if (string.IsNullOrWhiteSpace(QModJson.VersionChecker?.LatestVersionURL))
             {
                 throw new InvalidOperationException("Could not retrieve version from Nexus Mods API and no VersionChecker github URL is defined as a fallback.");
             }
@@ -124,7 +124,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
 
         private async Task<Version> GetLatestVersionAsync()
         {
-            var json = await Networking.ReadJsonAsync<QModJson>(QModJson.VersionChecker.LatestVersionURL);
+            var json = await Networking.ReadJsonAsync<QModJson>(QModJson.VersionChecker?.LatestVersionURL);
             if (Version.TryParse(json.Version, out Version version))
             {
                 return version;
