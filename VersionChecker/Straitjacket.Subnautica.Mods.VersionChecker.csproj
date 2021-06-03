@@ -56,6 +56,8 @@
     <Compile Include="IConfig.cs" />
     <Compile Include="INexusModJson.cs" />
     <Compile Include="IUpdatable.cs" />
+    <Compile Include="NexusAPI\IValidate.cs" />
+    <Compile Include="NexusAPI\Validate.cs" />
     <Compile Include="QModJson.cs" />
     <Compile Include="NexusAPI\ModJson.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

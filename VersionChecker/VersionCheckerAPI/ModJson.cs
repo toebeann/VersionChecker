@@ -3,7 +3,6 @@ using Oculus.Newtonsoft.Json;
 #elif BELOWZERO
 using Newtonsoft.Json;
 #endif
-using System;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -11,7 +10,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.VersionCheckerAPI
 {
     using Utility;
 
-    internal class ModJson : MarshalByRefObject, INexusModJson
+    internal class ModJson : INexusModJson
     {
         [JsonRequired, JsonProperty(PropertyName = "mod_id")]
         public int ModId { get; set; }

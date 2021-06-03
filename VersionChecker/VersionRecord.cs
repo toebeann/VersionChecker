@@ -6,13 +6,12 @@ using System.Globalization;
 namespace Straitjacket.Subnautica.Mods.VersionChecker
 {
     using ExtensionMethods;
+    using NexusAPI;
     using Utility;
 
     internal class VersionRecord
     {
         public enum VersionState { Unknown, Outdated, Current, Ahead }
-
-        internal static string ApiKey { get; set; }
 
         public QModJson QModJson { get; set; }
 
@@ -106,7 +105,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
                 return;
             }
 
-            if (!string.IsNullOrWhiteSpace(ApiKey))
+            if (!string.IsNullOrWhiteSpace(Validate.Main.ApiKey))
             {
                 LatestVersion = await GetVersionCheckerAPILatestVersionAsync();
                 if (LatestVersion is Version)
@@ -138,12 +137,12 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
 
         private async Task<Version> GetNexusAPILatestVersionAsync()
         {
-            if (string.IsNullOrWhiteSpace(ApiKey))
+            if (string.IsNullOrWhiteSpace(Validate.Main.ApiKey))
             {
                 return await GetVersionCheckerAPILatestVersionAsync();
             }
 
-            var json = await NexusAPI.ModJson.GetAsync(NexusDomainName, NexusModId, ApiKey);
+            var json = await ModJson.GetAsync(NexusDomainName, NexusModId, Validate.Main.ApiKey);
 
             if (json.Available)
             {
