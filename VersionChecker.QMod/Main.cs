@@ -108,7 +108,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
                             try
                             {
-                                uint modId = uint.Parse(modIdString, CultureInfo.InvariantCulture.NumberFormat);
+                                int modId = int.Parse(modIdString, CultureInfo.InvariantCulture.NumberFormat);
 
                                 VersionChecker.Main.Check(qMod, game, modId, modJson.VersionChecker?.LatestVersionURL);
                                 break;

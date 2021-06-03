@@ -60,7 +60,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
         public Version CurrentVersion => QMod.ParsedVersion;
         public Version LatestVersion { get; private set; }
         public QModGame Game { get; set; } = QModGame.None;
-        public uint ModId { get; }
+        public int ModId { get; }
         private string ModIdEncoded => WebUtility.UrlEncode(ModId.ToString());
 
         public string NexusDomainName => Game switch
@@ -71,7 +71,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
         };
         public string NexusAPIModUrl => Game == QModGame.None || ModId == 0
             ? null
-            : $"https://api.nexusmods.com/v1/games/{NexusDomainName}/mods/{ModId}.json";
+            : $"https://api.nexusmods.com/v1/games/{NexusDomainName}/mods/{ModIdEncoded}.json";
         public string VersionCheckerAPIModUrl => Game == QModGame.None || ModId == 0
             ? null
             : $"https://mods.vc.api.straitjacket.software/v1/games/{NexusDomainName}/mods/{ModIdEncoded}/{DisplayNameEncoded}.json";
@@ -188,7 +188,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
             Logger.LogInfo($"{Prefix}Currently running v{CurrentVersion}.");
         }
 
-        public VersionRecord(IQMod qMod, QModGame game, uint modId, string url = null) : this(qMod, url)
+        public VersionRecord(IQMod qMod, QModGame game, int modId, string url = null) : this(qMod, url)
         {
             Game = game;
             ModId = modId;
@@ -196,7 +196,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
         private async Task<Version> GetLatestVersionAsync()
         {
-            ModJson JSON = await Networking.ReadJSONAsync<ModJson>(URL);
+            ModJson JSON = await Networking.ReadJsonAsync<ModJson>(URL);
             return VersionParser.GetVersion(JSON.Version);
         }
 
@@ -243,13 +243,11 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
                 return await GetVersionCheckerAPILatestVersionAsync();
             }
 
-            string url = NexusAPIModUrl;
-            Dictionary<string, string> headers = new Dictionary<string, string> { ["apikey"] = VersionChecker.ApiKey };
-            NexusAPI.ModJson JSON = await Networking.ReadJSONAsync<NexusAPI.ModJson>(url, headers);
+            var json = await NexusAPI.ModJson.GetAsync(NexusDomainName, ModId, VersionChecker.ApiKey);
 
-            if (JSON.Available)
+            if (json.Available)
             {
-                return VersionParser.GetVersion(JSON.Version);
+                return VersionParser.GetVersion(json.Version);
             }
             else
             {
@@ -297,9 +295,18 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
         private async Task<Version> GetVersionCheckerAPILatestVersionAsync()
         {
-            string url = VersionCheckerAPIModUrl;
-            VersionCheckerAPI.ModJson JSON = await Networking.ReadJSONAsync<VersionCheckerAPI.ModJson>(url);
-            return VersionParser.GetVersion(JSON.Version);
+            var json = await VersionCheckerAPI.ModJson.GetAsync(NexusDomainName, ModId, DisplayName);
+
+            if (json.Available)
+            {
+                return VersionParser.GetVersion(json.Version);
+            }
+            else
+            {
+                // if the mod is unavailable on nexus mods, return the current version so the user is not constantly
+                // bugged to update a mod they can't access
+                return CurrentVersion;
+            }
         }
     }
 }

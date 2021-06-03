@@ -56,7 +56,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
             CheckedVersions[qMod] = new VersionRecord(qMod, url);
         }
 
-        public void Check(IQMod qMod, QModGame game, uint modId, string url = null)
+        public void Check(IQMod qMod, QModGame game, int modId, string url = null)
         {
             if (qMod == null)
             {

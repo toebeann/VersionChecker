@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Straitjacket.Utility.VersionChecker")]
+[assembly: AssemblyTitle("Straitjacket.Subnautica.Mods.VersionChecker")]
 [assembly: AssemblyDescription("Version checking utility for Subnautica mods")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Straitjacket Software")]

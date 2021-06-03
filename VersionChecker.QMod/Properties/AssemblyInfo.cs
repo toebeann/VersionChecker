@@ -1,12 +1,11 @@
 ﻿using System.Resources;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Straitjacket.Subnautica.Mods.VersionChecker.QMod;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Straitjacket.Utility.VersionChecker.QMod")]
+[assembly: AssemblyTitle("Straitjacket.Subnautica.Mods.VersionChecker.QMod")]
 [assembly: AssemblyDescription("Version checking utility for Subnautica mods")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Straitjacket Software")]
