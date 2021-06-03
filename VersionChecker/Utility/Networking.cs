@@ -29,7 +29,6 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.Utility
                 }
             }
 
-            ServicePointManager.ServerCertificateValidationCallback = (_, __, ___, ____) => true;
             return await client.DownloadStringTaskAsync(url);
         }
 
