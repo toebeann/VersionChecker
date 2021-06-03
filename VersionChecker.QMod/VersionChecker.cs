@@ -1,11 +1,18 @@
-﻿using QModManager.API;
+﻿#if SUBNAUTICA
+using Oculus.Newtonsoft.Json;
+#elif BELOWZERO
+using Newtonsoft.Json;
+#endif
+using QModManager.API;
 using SMLHelper.V2.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Random = UnityEngine.Random;
 using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
@@ -29,8 +36,8 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
         private static string apiKey;
         public static string ApiKey
         {
-            get => apiKey ??= PlayerPrefs.HasKey(VersionCheckerApiKey) ? PlayerPrefs.GetString(VersionCheckerApiKey) : null;
-            set => apiKey = value;
+            get => apiKey ??= VersionRecord.ApiKey = PlayerPrefs.HasKey(VersionCheckerApiKey) ? PlayerPrefs.GetString(VersionCheckerApiKey) : null;
+            set => apiKey = VersionRecord.ApiKey = value;
         }
 
         private static VersionChecker main;
@@ -39,36 +46,53 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
         private bool isRunning = false;
         private bool startupChecked = false;
         private readonly Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
-        private readonly Dictionary<IQMod, VersionRecord> CheckedVersions = new Dictionary<IQMod, VersionRecord>();
+        private readonly Dictionary<string, VersionRecord> RecordsByQModId = new Dictionary<string, VersionRecord>();
+        private readonly Dictionary<string, Color> ColorsByQModId = new Dictionary<string, Color>();
 
-        public void Check(IQMod qMod, string url)
+        private static readonly Color[] colors = new Color[]
         {
-            if (qMod == null)
+            new Color(0, 1, 1), new Color(.65f, .165f, .165f), new Color(0, .5f, 0), new Color(.68f, .85f, .9f), new Color(0, .5f, .5f),
+            new Color(0, 1, 0), new Color(1, 0, 1), new Color(.5f, .5f, 0), new Color(1, .65f, 0), new Color(1, 1, 0)
+        };
+
+        private Color GetColor(VersionRecord record)
+        {
+            if (ColorsByQModId.TryGetValue(record.QModJson.Id, out Color color))
             {
-                throw new ArgumentNullException("qMod");
+                return color;
             }
 
-            if (CheckedVersions.ContainsKey(qMod))
+            var availableColors = colors.Except(ColorsByQModId.Values);
+            if (!availableColors.Any())
             {
-                return;
+                var colorUses = ColorsByQModId.Values
+                    .GroupBy(x => x)
+                    .ToDictionary(x => x.Key, x => x.Count());
+                availableColors = colorUses
+                    .Where(x => x.Value == colorUses.Min(x => x.Value))
+                    .Select(x => x.Key)
+                    .Distinct();
             }
 
-            CheckedVersions[qMod] = new VersionRecord(qMod, url);
+            return ColorsByQModId[record.QModJson.Id] = availableColors.ElementAt(Random.Range(0, availableColors.Count() - 1));
         }
 
-        public void Check(IQMod qMod, QModGame game, int modId, string url = null)
+        public void Check(QModJson qModJson)
         {
-            if (qMod == null)
+            if (qModJson is null)
             {
-                throw new ArgumentNullException("qMod");
+                throw new ArgumentNullException("qModJson");
             }
 
-            if (CheckedVersions.TryGetValue(qMod, out VersionRecord record) && record.Game != QModGame.None)
+            if (qModJson.NexusId is null && qModJson.VersionChecker is null)
             {
                 return;
             }
 
-            CheckedVersions[qMod] = new VersionRecord(qMod, game, modId, url);
+            if (!RecordsByQModId.ContainsKey(qModJson.Id))
+            {
+                RecordsByQModId[qModJson.Id] = new VersionRecord(qModJson);
+            }
         }
 
 #pragma warning disable IDE0051 // Remove unused private members
@@ -143,11 +167,56 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
                 _ = Logger.LogInfoAsync("Initiating version checks...");
 
-                IEnumerable<Task> updateRecordTasks = CheckedVersions.Values.Select(x => x.UpdateLatestVersionAsync());
-                await Task.WhenAll(updateRecordTasks);
-                _ = Logger.LogInfoAsync("Version checks complete.");
+                try
+                {
+                    IEnumerable<Task> updateRecordTasks = RecordsByQModId.Values
+                        .Except(RecordsByQModId.Values
+                            .Where(x => x.QModJson.Id != "QModManager")
+                            .Where(x => !QModServices.Main.FindModById(x.QModJson.Id).IsLoaded))
+                        .Select(async record =>
+                    {
+                        try
+                        {
+                            await record.UpdateAsync();
+                        }
+                        catch (WebException e)
+                        {
+                            _ = Logger.LogDebugAsync($"{record.Prefix}There was an error retrieving the latest version: " +
+                                $"Could not connect to address.{Environment.NewLine}" + e.Message + Environment.NewLine);
+                        }
+                        catch (JsonReaderException e)
+                        {
+                            _ = Logger.LogDebugAsync($"{record.Prefix}There was an error retrieving the latest version: " +
+                                $"Invalid JSON response.{Environment.NewLine}" + e.Message + Environment.NewLine);
+                        }
+                        catch (JsonSerializationException e)
+                        {
+                            _ = Logger.LogDebugAsync($"{record.Prefix}There was an error retrieving the latest version: " +
+                                Environment.NewLine + e.Message + Environment.NewLine);
+                        }
+                        catch (InvalidOperationException e)
+                        {
+                            _ = Logger.LogDebugAsync($"{record.Prefix}There was an error retrieving the latest version: " +
+                                Environment.NewLine + e.Message + Environment.NewLine);
+                        }
+                        catch (Exception e)
+                        {
+                            _ = Logger.LogErrorAsync($"{record.Prefix}There was an error retrieving the latest version: " +
+                                Environment.NewLine + e.ToString() + Environment.NewLine);
+                        }
+                    });
+                    await Task.WhenAll(updateRecordTasks);
+                }
+                catch (Exception e)
+                {
+                    _ = Logger.LogErrorAsync(e.ToString() + Environment.NewLine);
+                }
+                finally
+                {
+                    _ = Logger.LogInfoAsync("Version checks complete.");
 
-                _ = PrintOutdatedVersionsAsync();
+                    _ = PrintOutdatedVersionsAsync();
+                }
             }
         }
 
@@ -156,33 +225,40 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
             await NoWaitScreenAsync();
             await Task.Delay(1000);
 
-            foreach (var versionRecord in CheckedVersions.Values)
-                _ = PrintVersionInfoAsync(versionRecord);
+            foreach (var record in RecordsByQModId.Values)
+            {
+                _ = PrintVersionInfoAsync(record);
+            }
         }
 
-        private async Task PrintVersionInfoAsync(VersionRecord versionRecord)
+        private async Task PrintVersionInfoAsync(VersionRecord record)
         {
-            switch (versionRecord.State)
+            if (record.QModJson.NexusId is null && record.QModJson.VersionChecker is null)
             {
-                case VersionRecord.VersionState.Outdated:
-                    _ = Logger.LogWarningAsync($"{versionRecord.Prefix}{versionRecord.Message(false)}");
+                return;
+            }
+
+            switch (record.State)
+            {
+                case Interface.IVersionRecord.VersionState.Outdated:
+                    _ = Logger.LogWarningAsync($"{record.Prefix}{record.Message(false)}");
 
                     for (var i = 0; i < 3; i++)
                     {
-                        _ = Logger.DisplayMessageAsync($"[<color=#{ColorUtility.ToHtmlStringRGB(versionRecord.Colour)}>" +
-                            $"{versionRecord.DisplayName}</color>] {versionRecord.Message(true)}");
+                        _ = Logger.DisplayMessageAsync($"[<color=#{ColorUtility.ToHtmlStringRGB(GetColor(record))}>" +
+                            $"{record.QModJson.DisplayName}</color>] {record.Message(true)}");
 
                         if (i < 2)
                             await Task.WhenAll(Task.Delay(5000), NoWaitScreenAsync());
                     }
                     break;
-                case VersionRecord.VersionState.Unknown:
-                    _ = Logger.LogWarningAsync($"{versionRecord.Prefix}{versionRecord.Message(false)}");
+                case Interface.IVersionRecord.VersionState.Unknown:
+                    _ = Logger.LogWarningAsync($"{record.Prefix}{record.Message(false)}");
                     break;
-                case VersionRecord.VersionState.Ahead:
-                case VersionRecord.VersionState.Current:
+                case Interface.IVersionRecord.VersionState.Ahead:
+                case Interface.IVersionRecord.VersionState.Current:
                 default:
-                    _ = Logger.LogMessageAsync($"{versionRecord.Prefix}{versionRecord.Message(false)}");
+                    _ = Logger.LogMessageAsync($"{record.Prefix}{record.Message(false)}");
                     break;
             }
         }

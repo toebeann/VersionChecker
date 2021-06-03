@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Straitjacket.Subnautica.Mods.VersionChecker</RootNamespace>
     <AssemblyName>Straitjacket.Subnautica.Mods.VersionChecker</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <LangVersion>8.0</LangVersion>
@@ -42,6 +42,10 @@
       <HintPath>$(ManagedDir)\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>$(GameDir)\BepInEx\core\BepInEx.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>$(ManagedDir)\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
@@ -49,11 +53,14 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants.cs" />
+    <Compile Include="ExtensionMethods\VersionExtensionMethods.cs" />
     <Compile Include="QModJson.cs" />
     <Compile Include="NexusAPI\ModJson.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utility\Networking.cs" />
     <Compile Include="VersionCheckerAPI\ModJson.cs" />
+    <Compile Include="VersionRecord.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VersionChecker.Interface\Straitjacket.Subnautica.Mods.VersionChecker.Interface.csproj">

@@ -3,17 +3,19 @@ using Oculus.Newtonsoft.Json;
 #elif BELOWZERO
 using Newtonsoft.Json;
 #endif
-using BepInEx;
 using QModManager.API;
 using QModManager.API.ModLoading;
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
+using System.Reflection;
 using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
+    using ExtensionMethods;
+    using NexusIds = Constants.NexusIds;
+
     /// <summary>
     /// QModManager entry patcher
     /// </summary>
@@ -41,22 +43,51 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
         private static void InitializeVersionCheckerVersionChecks()
         {
+            VersionChecker.Main.Check(new QModJson()
+            {
+                Version = Constants.Version,
+                DisplayName = Constants.QModDisplayName,
+                Id = Constants.QModId,
+                Enable = true,
+                NexusId = new QModJson.NexusIdOptions()
+                {
 #if SUBNAUTICA
-            var url = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_SUBNAUTICA.json";
-            VersionChecker.Main.Check(QModServices.Main.GetMyMod(), QModGame.Subnautica, 467, url);
+                    Subnautica = NexusIds.VersionChecker.Subnautica.ToString()
 #elif BELOWZERO
-            var url = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_BELOWZERO.json";
-            VersionChecker.Main.Check(QModServices.Main.GetMyMod(), QModGame.BelowZero, 66, url);
+                    BelowZero = NexusIds.VersionChecker.BelowZero.ToString()
 #endif
+                },
+                VersionChecker = new QModJson.VersionCheckerOptions()
+                {
+#if SUBNAUTICA
+                    LatestVersionURL = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_SUBNAUTICA.json"
+#elif BELOWZERO
+                    LatestVersionURL = "https://github.com/tobeyStraitjacket/VersionChecker/raw/master/VersionChecker/mod_BELOWZERO.json"
+#endif
+                }
+            });
         }
 
         private static void InitialiseQModManagerVersionChecks()
         {
+            Assembly qmmAssembly = Assembly.GetAssembly(typeof(IQMod));
+            AssemblyName qmmAssemblyName = qmmAssembly.GetName();
+
+            VersionChecker.Main.Check(new QModJson()
+            {
+                Version = qmmAssemblyName.Version.ToStringParsed(),
+                DisplayName = "QModManager",
+                Id = "QModManager",
+                Enable = true,
+                NexusId = new QModJson.NexusIdOptions()
+                {
 #if SUBNAUTICA
-            VersionChecker.Main.Check(new QModManagerQMod(), QModGame.Subnautica, 201);
+                    Subnautica = NexusIds.QModManager.Subnautica.ToString()
 #elif BELOWZERO
-            VersionChecker.Main.Check(new QModManagerQMod(), QModGame.BelowZero, 1);
+                    BelowZero = NexusIds.QModManager.BelowZero.ToString()
 #endif
+                }
+            });
         }
 
         private static void InitialiseQModVersionChecks()
@@ -80,61 +111,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
                             continue;
                         }
 
-
-                        IQMod qMod = QModServices.Main.FindModById(modJson.Id);
-                        if (qMod is null)
-                        {
-                            Logger.LogWarning($"Skipping mod due to QModServices error: {modJson.DisplayName}.");
-                            continue;
-                        }
-
-                        if (modJson.NexusId != null && (modJson.NexusId.Subnautica != null || modJson.NexusId.BelowZero != null))
-                        {
-                            QModGame game = Paths.ProcessName switch
-                            {
-                                "Subnautica" when modJson.NexusId.Subnautica != null => QModGame.Subnautica,
-                                "Subnautica" when modJson.NexusId.BelowZero != null => QModGame.BelowZero,
-                                "SubnauticaZero" when modJson.NexusId.BelowZero != null => QModGame.BelowZero,
-                                "SubnauticaZero" when modJson.NexusId.Subnautica != null => QModGame.Subnautica,
-                                _ => QModGame.None
-                            };
-
-                            string modIdString = game switch
-                            {
-                                QModGame.Subnautica => modJson.NexusId.Subnautica,
-                                QModGame.BelowZero => modJson.NexusId.BelowZero,
-                                _ => null
-                            };
-
-                            try
-                            {
-                                int modId = int.Parse(modIdString, CultureInfo.InvariantCulture.NumberFormat);
-
-                                VersionChecker.Main.Check(qMod, game, modId, modJson.VersionChecker?.LatestVersionURL);
-                                break;
-                            }
-                            catch (ArgumentNullException e)
-                            {
-                                Logger.LogError($"[{modJson.DisplayName}] Skipping NexusId: mod ID is null: {modIdString}");
-                                Logger.LogError(e.Message);
-                            }
-                            catch (FormatException e)
-                            {
-                                Logger.LogError($"[{modJson.DisplayName}] Skipping NexusId: mod ID is not a valid unsigned integer: {modIdString}");
-                                Logger.LogError(e.Message);
-                            }
-                            catch (OverflowException e)
-                            {
-                                Logger.LogError($"[{modJson.DisplayName}] Skipping NexusId: mod ID is outside the valid range for an unsigned integer: " +
-                                    $"{modIdString}");
-                                Logger.LogError(e.Message);
-                            }
-                        }
-
-                        if (modJson.VersionChecker != null)
-                        {
-                            VersionChecker.Main.Check(qMod, modJson.VersionChecker.LatestVersionURL);
-                        }
+                        VersionChecker.Main.Check(modJson);
                     }
                     catch (Exception e)
                     {
