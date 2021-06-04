@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Straitjacket
+namespace Straitjacket.Subnautica.Mods.VersionChecker.ExtensionMethods
 {
-    internal static class ExtensionMethods
+    internal static class VersionExtensionMethods
     {
         public static string ToStringParsed(this Version version)
         {

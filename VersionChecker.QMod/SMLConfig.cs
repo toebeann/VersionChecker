@@ -2,13 +2,13 @@
 using SMLHelper.V2.Options.Attributes;
 using System;
 
-namespace Straitjacket.Utility.VersionChecker
+namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
     [Menu("VersionChecker", LoadOn = MenuAttribute.LoadEvents.MenuOpened | MenuAttribute.LoadEvents.MenuRegistered)]
-    internal class Config : ConfigFile
+    internal class SMLConfig : ConfigFile, ISMLConfig
     {
         [Choice("Frequency of checks")]
-        public VersionChecker.CheckFrequency Frequency { get; set; } = VersionChecker.CheckFrequency.Hourly;
+        public CheckFrequency Frequency { get; set; } = CheckFrequency.Hourly;
 
         public DateTime LastChecked { get; set; }
     }

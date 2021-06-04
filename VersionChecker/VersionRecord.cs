@@ -1,78 +1,58 @@
-﻿#if SUBNAUTICA
-using Oculus.Newtonsoft.Json;
-#elif BELOWZERO
-using Newtonsoft.Json;
-#endif
-using QModManager.API;
-using QModManager.Utility;
+﻿using BepInEx;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Reflection;
 using System.Threading.Tasks;
-using UnityEngine;
-using Logger = BepInEx.Subnautica.Logger;
+using System.Globalization;
 
-namespace Straitjacket.Utility.VersionChecker
+namespace Straitjacket.Subnautica.Mods.VersionChecker
 {
+    using ExtensionMethods;
+    using NexusAPI;
+    using Utility;
+
     internal class VersionRecord
     {
         public enum VersionState { Unknown, Outdated, Current, Ahead }
 
-        private static readonly Color[] assemblyColours = new Color[]
+        public QModJson QModJson { get; set; }
+
+        private Version currentVersion;
+        public virtual Version CurrentVersion => currentVersion switch
         {
-            new Color(0, 1, 1), new Color(.65f, .165f, .165f), new Color(0, .5f, 0), new Color(.68f, .85f, .9f), new Color(0, .5f, .5f),
-            new Color(0, 1, 0), new Color(1, 0, 1), new Color(.5f, .5f, 0), new Color(1, .65f, 0), new Color(1, 1, 0)
-        };
-        private static readonly List<Color> assignedColours = new List<Color>();
-        public static Color GetColour()
-        {
-            var availableColours = assemblyColours.Except(assignedColours).Union(assignedColours.Except(assignedColours));
-            if (!availableColours.Any())
+            Version version => version,
+            _ => Version.TryParse(QModJson.Version, out currentVersion) switch
             {
-                var result = assignedColours.GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
-                while (result.Max(x => x.Value) != result.Min(x => x.Value))
-                {
-                    result = result.Except(result.Where(x => x.Value == result.Max(y => y.Value)))
-                        .ToDictionary(x => x.Key, x => x.Value);
-                }
-                availableColours = result.Keys.Distinct();
+                true => currentVersion,
+                false => currentVersion = new Version(0, 0, 0, 0)
             }
+        };
 
-            var colour = availableColours.ElementAt(UnityEngine.Random.Range(0, availableColours.Count() - 1));
-            assignedColours.Add(colour);
-            return colour;
-        }
+        public Version LatestVersion { get; protected set; }
 
-        private static readonly VersionParser VersionParser = new VersionParser();
+        public string Current => CurrentVersion?.ToStringParsed();
+        public string Latest => LatestVersion?.ToStringParsed();
 
-        public Assembly Assembly => QMod.LoadedAssembly;
-        public string DisplayName => QMod.DisplayName;
-        private string DisplayNameEncoded => WebUtility.UrlEncode(DisplayName);
+        public Game Game => Paths.ProcessName switch
+        {
+            "Subnautica" when QModJson.NexusId?.Subnautica is string => Game.Subnautica,
+            "Subnautica" when QModJson.NexusId?.BelowZero is string => Game.BelowZero,
+            "SubnauticaZero" when QModJson.NexusId?.BelowZero is string => Game.BelowZero,
+            "SubnauticaZero" when QModJson.NexusId?.Subnautica is string => Game.Subnautica,
+            _ => Game.Unknown
+        };
 
-        private Color? colour;
-        public Color Colour => colour ??= GetColour();
-
-        public string URL { get; }
-        public Version CurrentVersion => QMod.ParsedVersion;
-        public Version LatestVersion { get; private set; }
-        public QModGame Game { get; set; } = QModGame.None;
-        public uint ModId { get; }
-        private string ModIdEncoded => WebUtility.UrlEncode(ModId.ToString());
+        public int NexusModId => Game switch
+        {
+            Game.Subnautica => int.Parse(QModJson.NexusId?.Subnautica, CultureInfo.InvariantCulture.NumberFormat),
+            Game.BelowZero => int.Parse(QModJson.NexusId?.BelowZero, CultureInfo.InvariantCulture.NumberFormat),
+            _ => -1
+        };
 
         public string NexusDomainName => Game switch
         {
-            QModGame.Subnautica => "subnautica",
-            QModGame.BelowZero => "subnauticabelowzero",
-            _ => throw new InvalidOperationException($"Could not get Nexus domain name for QModGame: {Game}")
+            Game.Subnautica => "subnautica",
+            Game.BelowZero => "subnauticabelowzero",
+            _ => throw new InvalidOperationException($"Could not parse Nexus domain name for Game: {Game}")
         };
-        public string NexusAPIModUrl => Game == QModGame.None || ModId == 0
-            ? null
-            : $"https://api.nexusmods.com/v1/games/{NexusDomainName}/mods/{ModId}.json";
-        public string VersionCheckerAPIModUrl => Game == QModGame.None || ModId == 0
-            ? null
-            : $"https://mods.vc.api.straitjacket.software/v1/games/{NexusDomainName}/mods/{ModIdEncoded}/{DisplayNameEncoded}.json";
 
         public VersionState State => CurrentVersion switch
         {
@@ -82,172 +62,98 @@ namespace Straitjacket.Utility.VersionChecker
             _ => VersionState.Unknown
         };
 
-        public IQMod QMod { get; }
-
-        public string Prefix => Assembly == Assembly.GetAssembly(typeof(VersionChecker))
-                    ? string.Empty
-                    : $"[{DisplayName}] ";
-
-        public async Task UpdateLatestVersionAsync()
+        public string Prefix => QModJson.Id switch
         {
-            if (!QMod.IsLoaded)
+            Constants.QModId => string.Empty,
+            _ => $"[{QModJson.DisplayName}] "
+        };
+
+        public VersionRecord(QModJson qModJson)
+        {
+            QModJson = qModJson;
+        }
+
+        public virtual string Message(bool splitLines = false) => State switch
+        {
+            VersionState.Ahead => $"Currently running v{Current}.{(splitLines ? Environment.NewLine : " ")}" +
+                                  $"The latest release version is v{Latest}. We are ahead.",
+            VersionState.Current => $"Currently running v{Current}.{(splitLines ? Environment.NewLine : " ")}" +
+                                    $"The latest release version is v{Latest}. Up to date.",
+            VersionState.Outdated => $"A new version has been released: v{Latest}.{(splitLines ? Environment.NewLine : " ")}" +
+                                     $"Currently running v{Current}. Please update at your earliest convenience!",
+            _ => "Could not compare versions."
+        };
+
+        public virtual void Update() => UpdateAsync().Wait();
+
+        public virtual async Task UpdateAsync()
+        {
+            if (!QModJson.Enable || (NexusModId < 0 && string.IsNullOrWhiteSpace(QModJson.VersionChecker?.LatestVersionURL)))
             {
                 return;
             }
 
-            try
+            if (NexusModId < 0 && !string.IsNullOrWhiteSpace(QModJson.VersionChecker?.LatestVersionURL))
             {
-                if (Game == QModGame.None)
+                LatestVersion = await GetLatestVersionAsync();
+                return;
+            }
+
+            LatestVersion = await GetNexusAPILatestVersionAsync();
+            if (LatestVersion is Version)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(Validate.Main.ApiKey))
+            {
+                LatestVersion = await GetVersionCheckerAPILatestVersionAsync();
+                if (LatestVersion is Version)
                 {
-                    LatestVersion = await GetLatestVersionAsync();
-                }
-                else
-                {
-                    bool success;
-                    (success, LatestVersion) = await TryGetNexusAPILatestVersionAsync();
-                    if (success)
-                    {
-                        return;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(VersionChecker.ApiKey))
-                    {
-                        (success, LatestVersion) = await TryGetVersionCheckerAPILatestVersionAsync();
-                        if (success)
-                        {
-                            return;
-                        }
-                    }
-
-                    if (string.IsNullOrWhiteSpace(URL))
-                    {
-                        throw new InvalidOperationException("Could not retrieve version from Nexus Mods API and no VersionChecker github URL is defined as a fallback.");
-                    }
-
-                    LatestVersion = await GetLatestVersionAsync();
+                    return;
                 }
             }
-            catch (WebException e)
-            {
-                _ = Logger.LogErrorAsync($"{Prefix}There was an error retrieving the latest version: " +
-                    $"Could not connect to address {URL}");
-                _ = Logger.LogErrorAsync(e.Message);
-            }
-            catch (JsonReaderException e)
-            {
-                _ = Logger.LogErrorAsync($"{Prefix}There was an error retrieving the latest version: " +
-                    $"Invalid JSON found at address {URL}");
-                _ = Logger.LogErrorAsync(e.Message);
-            }
-            catch (JsonSerializationException e)
-            {
-                _ = Logger.LogErrorAsync($"{Prefix}There was an error retrieving the latest version:");
-                _ = Logger.LogErrorAsync(e.Message);
-            }
-            catch (InvalidOperationException e)
-            {
-                _ = Logger.LogErrorAsync($"{Prefix}There was an error retrieving the latest version:");
-                _ = Logger.LogErrorAsync(e.Message);
-            }
-            catch (Exception e)
-            {
-                _ = Logger.LogErrorAsync($"{Prefix}There was an unhandled error retrieving the latest version.");
-                _ = Logger.LogErrorAsync(e.ToString());
-            }
-        }
 
-        public string Message(bool splitLines = false) => State switch
-        {
-            VersionState.Ahead => $"Currently running v{CurrentVersion}.{(splitLines ? Environment.NewLine : " ")}" +
-                                  $"The latest release version is v{LatestVersion}. We are ahead.",
-            VersionState.Current => $"Currently running v{CurrentVersion}.{(splitLines ? Environment.NewLine : " ")}" +
-                                    $"The latest release version is v{LatestVersion}. Up to date.",
-            VersionState.Outdated => $"A new version has been released: v{LatestVersion}.{(splitLines ? Environment.NewLine : " ")}" +
-                                     $"Currently running v{CurrentVersion}. Please update at your earliest convenience!",
-            _ => "Could not compare versions."
-        };
-
-        public VersionRecord(IQMod qMod, string url)
-        {
-            if (qMod is null)
+            if (string.IsNullOrWhiteSpace(QModJson.VersionChecker?.LatestVersionURL))
             {
-                throw new ArgumentNullException("qMod");
+                throw new InvalidOperationException("Could not retrieve version from Nexus Mods API and no VersionChecker github URL is defined as a fallback.");
             }
 
-            QMod = qMod;
-            URL = url;
-
-            if (CurrentVersion is null)
-            {
-                Logger.LogError($"{Prefix}There was an error retrieving the current version: QModManager failed to parse.");
-                throw new InvalidOperationException();
-            }
-
-            Logger.LogInfo($"{Prefix}Currently running v{CurrentVersion}.");
-        }
-
-        public VersionRecord(IQMod qMod, QModGame game, uint modId, string url = null) : this(qMod, url)
-        {
-            Game = game;
-            ModId = modId;
+            LatestVersion = await GetLatestVersionAsync();
         }
 
         private async Task<Version> GetLatestVersionAsync()
         {
-            ModJson JSON = await Networking.ReadJSONAsync<ModJson>(URL);
-            return VersionParser.GetVersion(JSON.Version);
-        }
-
-        private async Task<(bool, Version)> TryGetNexusAPILatestVersionAsync()
-        {
-            try
+            var json = await Networking.ReadJsonAsync<QModJson>(QModJson.VersionChecker?.LatestVersionURL);
+            if (Version.TryParse(json.Version, out Version version))
             {
-                return (true, await GetNexusAPILatestVersionAsync());
+                return version;
             }
-            catch (WebException e)
+            else
             {
-                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version: " +
-                    $"Could not connect to address {URL}");
-                _ = Logger.LogWarningAsync(e.Message);
+                return null;
             }
-            catch (JsonReaderException e)
-            {
-                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version: " +
-                    $"Invalid JSON found at address {URL}");
-                _ = Logger.LogWarningAsync(e.Message);
-            }
-            catch (JsonSerializationException e)
-            {
-                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version:");
-                _ = Logger.LogWarningAsync(e.Message);
-            }
-            catch (InvalidOperationException e)
-            {
-                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version:");
-                _ = Logger.LogWarningAsync(e.Message);
-            }
-            catch (Exception e)
-            {
-                _ = Logger.LogWarningAsync($"{Prefix}There was an unhandled error retrieving the latest version.");
-                _ = Logger.LogWarningAsync(e.ToString());
-            }
-            return (false, null);
         }
 
         private async Task<Version> GetNexusAPILatestVersionAsync()
         {
-            if (string.IsNullOrWhiteSpace(VersionChecker.ApiKey))
+            if (string.IsNullOrWhiteSpace(Validate.Main.ApiKey))
             {
                 return await GetVersionCheckerAPILatestVersionAsync();
             }
 
-            string url = NexusAPIModUrl;
-            Dictionary<string, string> headers = new Dictionary<string, string> { ["apikey"] = VersionChecker.ApiKey };
-            NexusAPI.ModJson JSON = await Networking.ReadJSONAsync<NexusAPI.ModJson>(url, headers);
+            var json = await ModJson.GetAsync(NexusDomainName, NexusModId, Validate.Main.ApiKey);
 
-            if (JSON.Available)
+            if (json.Available)
             {
-                return VersionParser.GetVersion(JSON.Version);
+                if (Version.TryParse(json.Version, out Version version))
+                {
+                    return version;
+                }
+                else
+                {
+                    return null;
+                }
             }
             else
             {
@@ -257,47 +163,30 @@ namespace Straitjacket.Utility.VersionChecker
             }
         }
 
-        private async Task<(bool, Version)> TryGetVersionCheckerAPILatestVersionAsync()
-        {
-            try
-            {
-                return (true, await GetVersionCheckerAPILatestVersionAsync());
-            }
-            catch (WebException e)
-            {
-                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version: " +
-                    $"Could not connect to address {URL}");
-                _ = Logger.LogWarningAsync(e.Message);
-            }
-            catch (JsonReaderException e)
-            {
-                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version: " +
-                    $"Invalid JSON found at address {URL}");
-                _ = Logger.LogWarningAsync(e.Message);
-            }
-            catch (JsonSerializationException e)
-            {
-                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version:");
-                _ = Logger.LogWarningAsync(e.Message);
-            }
-            catch (InvalidOperationException e)
-            {
-                _ = Logger.LogWarningAsync($"{Prefix}There was an error retrieving the latest version:");
-                _ = Logger.LogWarningAsync(e.Message);
-            }
-            catch (Exception e)
-            {
-                _ = Logger.LogWarningAsync($"{Prefix}There was an unhandled error retrieving the latest version.");
-                _ = Logger.LogWarningAsync(e.ToString());
-            }
-            return (false, null);
-        }
-
         private async Task<Version> GetVersionCheckerAPILatestVersionAsync()
         {
-            string url = VersionCheckerAPIModUrl;
-            VersionCheckerAPI.ModJson JSON = await Networking.ReadJSONAsync<VersionCheckerAPI.ModJson>(url);
-            return VersionParser.GetVersion(JSON.Version);
+            var json = await VersionCheckerAPI.ModJson.GetAsync(NexusDomainName,
+                                                                NexusModId,
+                                                                QModJson.DisplayName,
+                                                                QModJson.Id);
+
+            if (json.Available)
+            {
+                if (Version.TryParse(json.Version, out Version version))
+                {
+                    return version;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                // if the mod is unavailable on nexus mods, return the current version so the user is not constantly
+                // bugged to update a mod they can't access
+                return CurrentVersion;
+            }
         }
     }
 }
