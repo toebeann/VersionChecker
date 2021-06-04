@@ -2,7 +2,7 @@
 {
     internal static class Constants
     {
-        public const string Version = "1.3.0.2";
+        public const string Version = "1.3.1";
         public const string QModDisplayName = "VersionChecker";
         public const string QModId = "VersionChecker";
 
