@@ -26,7 +26,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
         private bool isRunning = false;
         private bool startupChecked = false;
-        private readonly Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
+        private readonly SMLConfig SMLConfig = OptionsPanelHandler.Main.RegisterModOptions<SMLConfig>();
         private readonly Dictionary<string, VersionRecord> RecordsByQModId = new Dictionary<string, VersionRecord>();
         private readonly Dictionary<string, Color> ColorsByQModId = new Dictionary<string, Color>();
 
@@ -95,8 +95,23 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
                 SceneManager.sceneLoaded += SceneManager_sceneLoaded;
 
                 ConsoleCommandsHandler.Main.RegisterConsoleCommand<Func<string, string>>("apikey", SetApiKey);
-                Validate.Main.ApiKey = Config.NexusApiKey;
+                BepInExConfig.BindPlugin();
+                BepInExConfig.Nexus.ApiKey.SettingChanged += Nexus_ApiKey_SettingChanged;
             }
+        }
+
+#pragma warning disable IDE0051 // Remove unused private members
+        private void OnDestroy()
+#pragma warning restore IDE0051 // Remove unused private members
+        {
+            SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
+            BepInExConfig.Nexus.ApiKey.SettingChanged -= Nexus_ApiKey_SettingChanged;
+        }
+
+        private void Nexus_ApiKey_SettingChanged(object _, EventArgs __)
+        {
+            SMLConfig.LastChecked = default;
+            SMLConfig.Save();
         }
 
         private void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
@@ -113,9 +128,9 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
         {
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                if (!string.IsNullOrWhiteSpace(Config.NexusApiKey))
+                if (!string.IsNullOrWhiteSpace(BepInExConfig.Nexus.ApiKey.Value))
                 {
-                    return $"Nexus API key ending in {Config.NexusApiKey.Substring(Math.Max(0, apiKey.Length - 4))} is set.";
+                    return $"Nexus API key ending in {BepInExConfig.Nexus.ApiKey.Value.Substring(Math.Max(0, apiKey.Length - 4))} is set.";
                 }
                 else
                 {
@@ -124,9 +139,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
             }
             else if (apiKey.ToLowerInvariant() == "unset")
             {
-                Validate.Main.ApiKey = Config.NexusApiKey = null;
-                Config.LastChecked = default;
-                Config.Save();
+                Validate.Main.ApiKey = BepInExConfig.Nexus.ApiKey.Value = BepInExConfig.Nexus.ApiKey.DefaultValue as string;
                 return "Nexus API key unset.";
             }
             else
@@ -142,14 +155,16 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
             {
                 Validate.Main.ApiKey = apiKey.Trim();
                 var user = await Validate.GetAsync();
-                Config.NexusApiKey = Validate.Main.ApiKey;
-                Config.LastChecked = default;
-                Config.Save();
-                ErrorMessage.AddMessage($"Nexus API key for user {user.Username} set.");
+                BepInExConfig.Nexus.ApiKey.Value = Validate.Main.ApiKey;
+                string message = $"Nexus API key for user {user.Username} set.";
+                ErrorMessage.AddMessage(message);
+                Logger.LogMessage(message);
             }
             catch
             {
-                ErrorMessage.AddError("Please enter a valid API key.");
+                string message = "Please enter a valid API key.";
+                ErrorMessage.AddWarning(message);
+                Logger.LogWarning(message);
             }
         }
 
@@ -163,8 +178,8 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
                 await ShouldCheckVersionsAsync();
                 _ = Logger.LogDebugAsync("Time to check versions.");
 
-                Config.LastChecked = DateTime.UtcNow;
-                Config.Save();
+                SMLConfig.LastChecked = DateTime.UtcNow;
+                SMLConfig.Save();
 
                 _ = Logger.LogInfoAsync("Initiating version checks...");
 
@@ -266,7 +281,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
         private async Task ShouldCheckVersionsAsync()
         {
-            if (Config.Frequency == CheckFrequency.Startup && !startupChecked)
+            if (SMLConfig.Frequency == CheckFrequency.Startup && !startupChecked)
             {
                 startupChecked = true;
                 return;
@@ -276,26 +291,26 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 
             while (!shouldCheck)
             {
-                switch (Config.Frequency)
+                switch (SMLConfig.Frequency)
                 {
                     default:
                     case CheckFrequency.Never:
                         shouldCheck = false;
                         break;
                     case CheckFrequency.Hourly:
-                        await SpecificDateTimeAsync(Config.LastChecked.AddHours(1), 60000);
+                        await SpecificDateTimeAsync(SMLConfig.LastChecked.AddHours(1), 60000);
                         shouldCheck = true;
                         break;
                     case CheckFrequency.Daily:
-                        await SpecificDateTimeAsync(Config.LastChecked.AddDays(1), 3600000);
+                        await SpecificDateTimeAsync(SMLConfig.LastChecked.AddDays(1), 3600000);
                         shouldCheck = true;
                         break;
                     case CheckFrequency.Weekly:
-                        await SpecificDateTimeAsync(Config.LastChecked.AddDays(7), 3600000);
+                        await SpecificDateTimeAsync(SMLConfig.LastChecked.AddDays(7), 3600000);
                         shouldCheck = true;
                         break;
                     case CheckFrequency.Monthly:
-                        await SpecificDateTimeAsync(Config.LastChecked.AddMonths(1), 3600000);
+                        await SpecificDateTimeAsync(SMLConfig.LastChecked.AddMonths(1), 3600000);
                         shouldCheck = true;
                         break;
                 }

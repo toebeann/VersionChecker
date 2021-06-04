@@ -38,6 +38,10 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(GameDir)\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="BepInEx">
       <HintPath>$(GameDir)\BepInEx\core\BepInEx.dll</HintPath>
       <Private>False</Private>
@@ -47,13 +51,24 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="UnityEngine">
+      <HintPath>$(ManagedDir)\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ManagedDir)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BepInExConfig.cs" />
     <Compile Include="CheckFrequency.cs" />
+    <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="ExtensionMethods\ActionExtensionMethods.cs" />
     <Compile Include="ExtensionMethods\VersionExtensionMethods.cs" />
     <Compile Include="Game.cs" />
-    <Compile Include="IConfig.cs" />
+    <Compile Include="ISMLConfig.cs" />
     <Compile Include="INexusModJson.cs" />
     <Compile Include="IUpdatable.cs" />
     <Compile Include="NexusAPI\IValidate.cs" />
