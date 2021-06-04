@@ -5,13 +5,11 @@ using System;
 namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
 {
     [Menu("VersionChecker", LoadOn = MenuAttribute.LoadEvents.MenuOpened | MenuAttribute.LoadEvents.MenuRegistered)]
-    internal class Config : ConfigFile, IConfig
+    internal class SMLConfig : ConfigFile, ISMLConfig
     {
         [Choice("Frequency of checks")]
         public CheckFrequency Frequency { get; set; } = CheckFrequency.Hourly;
 
         public DateTime LastChecked { get; set; }
-
-        public string NexusApiKey { get; set; }
     }
 }
