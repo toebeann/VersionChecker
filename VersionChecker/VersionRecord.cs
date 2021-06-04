@@ -165,7 +165,10 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
 
         private async Task<Version> GetVersionCheckerAPILatestVersionAsync()
         {
-            var json = await VersionCheckerAPI.ModJson.GetAsync(NexusDomainName, NexusModId, QModJson.DisplayName);
+            var json = await VersionCheckerAPI.ModJson.GetAsync(NexusDomainName,
+                                                                NexusModId,
+                                                                QModJson.DisplayName,
+                                                                QModJson.Id);
 
             if (json.Available)
             {
