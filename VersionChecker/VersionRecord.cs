@@ -22,7 +22,7 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
             _ => Version.TryParse(QModJson.Version, out currentVersion) switch
             {
                 true => Version.Parse(currentVersion.ToStringParsed()),
-                false => currentVersion = new Version(0, 0, 0, 0)
+                false => currentVersion = new Version(0, 0)
             }
         };
 
