@@ -86,7 +86,8 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker
                                     $"The latest release version is v{Latest}. Up to date.",
             VersionState.Outdated => $"A new version has been released: v{Latest}.{(splitLines ? Environment.NewLine : " ")}" +
                                      $"Currently running v{Current}. Please update at your earliest convenience!",
-            _ => "Could not compare versions."
+            _ => $"This mod has a configuration issue!{(splitLines ? Environment.NewLine : " ")}" +
+                 "Please check for updates on Nexus Mods!"
         };
 
         public virtual void Update() => UpdateAsync().Wait();

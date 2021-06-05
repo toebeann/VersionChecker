@@ -270,6 +270,15 @@ namespace Straitjacket.Subnautica.Mods.VersionChecker.QMod
                     break;
                 case VersionRecord.VersionState.Unknown:
                     _ = Logger.LogWarningAsync($"{record.Prefix}{record.Message(false)}");
+
+                    for (var i = 0; i < 3; i++)
+                    {
+                        _ = Logger.DisplayMessageAsync($"[<color=#{ColorUtility.ToHtmlStringRGB(GetColor(record))}>" +
+                            $"{record.QModJson.DisplayName}</color>] {record.Message(true)}");
+
+                        if (i < 2)
+                            await Task.WhenAll(Task.Delay(5000), NoWaitScreenAsync());
+                    }
                     break;
                 case VersionRecord.VersionState.Ahead:
                 case VersionRecord.VersionState.Current:
